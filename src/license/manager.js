@@ -18,16 +18,29 @@ function loadKeys() {
 }
 
 class LicenseManager {
-  constructor({ dir, box, fetchImpl = globalThis.fetch, device }) {
+  constructor({ dir, box, legacyBox, fetchImpl = globalThis.fetch, device }) {
     this.file = path.join(dir, 'license.dat');
+    // The license file needs no keychain: activations are signed and device-bound already.
+    // `box` should be device-local encryption; `legacyBox` (keychain) is only used to migrate old files once.
     this.box = box;
+    this.legacyBox = legacyBox;
     this.fetch = fetchImpl;
     this.keys = loadKeys();
     this.device = device || core.deviceFingerprint();
   }
 
   _read() {
-    try { return JSON.parse(this.box.decrypt(fs.readFileSync(this.file, 'utf8'))); } catch (_) { return null; }
+    let raw;
+    try { raw = fs.readFileSync(this.file, 'utf8'); } catch (_) { return null; }
+    try { return JSON.parse(this.box.decrypt(raw)); } catch (_) {}
+    if (this.legacyBox) {
+      try {
+        const obj = JSON.parse(this.legacyBox.decrypt(raw));
+        this._write(obj); // migrate off the keychain
+        return obj;
+      } catch (_) {}
+    }
+    return null;
   }
   _write(obj) {
     if (!obj) { try { fs.unlinkSync(this.file); } catch (_) {} return; }

@@ -14,13 +14,18 @@ let win, tray, store, engine, license, quitting = false, blockerId = null;
 
 // ---- at-rest encryption: OS keychain (macOS Keychain / Windows DPAPI) via safeStorage ----
 function makeBox() {
-  if (safeStorage.isEncryptionAvailable()) {
-    return {
-      encrypt: s => 'ss1:' + safeStorage.encryptString(s).toString('base64'),
-      decrypt: s => s.startsWith('ss1:') ? safeStorage.decryptString(Buffer.from(s.slice(4), 'base64')) : fallback.decrypt(s)
-    };
-  }
-  return fallback;
+  // Platform tokens: prefer the OS keychain, but never let a keychain problem (denied prompt,
+  // forgotten keychain password, signature change after an update) break the app.
+  return {
+    encrypt(s) {
+      try { if (safeStorage.isEncryptionAvailable()) return 'ss1:' + safeStorage.encryptString(s).toString('base64'); } catch (_) {}
+      return fallback.encrypt(s);
+    },
+    decrypt(s) {
+      if (s.startsWith('ss1:')) return safeStorage.decryptString(Buffer.from(s.slice(4), 'base64'));
+      return fallback.decrypt(s);
+    }
+  };
 }
 // Fallback (e.g. Linux without a keyring): AES-256-GCM with a device-derived key.
 const fallback = (() => {
@@ -181,7 +186,7 @@ app.whenReady().then(() => {
   const dir = app.getPath('userData');
   store = new Store(dir);
   const box = makeBox();
-  license = new LicenseManager({ dir, box });
+  license = new LicenseManager({ dir, box: fallback, legacyBox: box });
   engine = new Engine({ store, box, openExternal, notify });
   store.onChange(() => notify('changed'));
   registerIpc();

@@ -152,7 +152,7 @@ function signActivation(claims, activationPrivateKey) {
 }
 
 function verifyActivation(token, { activationPublicKey, licensePublicKey, device, key, revoked = [] }) {
-  const [bodyB64, sigB64] = String(token || '').trim().split('.');
+  const [bodyB64, sigB64] = String(token || '').replace(/\s+/g, '').split('.');
   if (!bodyB64 || !sigB64) throw new Error('Activation code is malformed.');
   const body = Buffer.from(bodyB64, 'base64url');
   if (!crypto.verify(null, Buffer.concat([ACT_DOMAIN, body]), activationPublicKey, Buffer.from(sigB64, 'base64url'))) {

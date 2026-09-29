@@ -71,3 +71,11 @@ test('device fingerprint is stable and 128-bit hex', () => {
   assert.strictEqual(a, b);
   assert.match(a, /^[0-9a-f]{32}$/);
 });
+
+test('activation codes survive pasted whitespace and line breaks', () => {
+  const key = core.signLicense({ tier: 1, maxDevices: 1, serial: 91 }, lic.privateKey);
+  const device = core.deviceFingerprint('ws-machine');
+  const token = core.signActivation({ v: 1, serial: 91, device }, act.privateKey);
+  const messy = '  ' + token.slice(0, 50) + '\n' + token.slice(50, 120) + ' \r\n' + token.slice(120) + '\n';
+  assert.strictEqual(core.verifyActivation(messy, { activationPublicKey: act.publicKey, licensePublicKey: lic.publicKey, device, key }).serial, 91);
+});
