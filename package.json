@@ -1,7 +1,7 @@
 {
   "name": "creator-hub",
   "productName": "Creator Hub",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Local-first scheduler, approval queue, publisher and analytics for YouTube, TikTok, Instagram, Threads, Facebook and X.",
   "main": "main.js",
   "license": "UNLICENSED",
@@ -36,7 +36,10 @@
         "dmg"
       ],
       "category": "public.app-category.productivity",
-      "icon": "assets/icon.png"
+      "icon": "assets/icon.png",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
     },
     "win": {
       "target": [

@@ -23,11 +23,24 @@ jobs:
       - run: npm test
       - name: Build (Mac)
         if: runner.os == 'macOS'
+        # Ad-hoc signed (package.json mac.identity "-") until you add an Apple Developer ID.
         run: npx electron-builder --mac dmg --arm64 --x64 --publish never
-        # Unsigned (ad-hoc) until you add an Apple Developer ID: then set CSC_LINK, CSC_KEY_PASSWORD,
-        # APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID as repo secrets and remove the line below.
-        env:
-          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Verify Mac signatures (fails the build if the app would crash on launch)
+        if: runner.os == 'macOS'
+        run: |
+          set -e
+          for dmg in dist/*.dmg; do
+            mnt=$(mktemp -d)
+            hdiutil attach "$dmg" -nobrowse -readonly -mountpoint "$mnt" >/dev/null
+            codesign --verify --deep --strict --verbose=2 "$mnt/Creator Hub.app"
+            hdiutil detach "$mnt" >/dev/null
+          done
+          # Launch smoke test of the native-arch build: app must stay alive for 8s
+          app="dist/mac-arm64/Creator Hub.app"
+          [ -d "$app" ] || app="dist/mac/Creator Hub.app"
+          "$app/Contents/MacOS/Creator Hub" --no-sandbox & pid=$!
+          sleep 8
+          if kill -0 $pid 2>/dev/null; then echo "launch OK"; kill $pid; else echo "APP CRASHED ON LAUNCH"; exit 1; fi
       - name: Build (Windows)
         if: runner.os == 'Windows'
         run: npx electron-builder --win nsis --x64 --publish never
