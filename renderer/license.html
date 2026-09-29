@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'none'">
+  <title>Activate Creator Hub</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main style="max-width:760px;margin:0 auto">
+    <div class="header"><div><h1>Activate Creator Hub</h1><div class="muted">Enter your license key to get started.</div></div></div>
+    <div id="err"></div>
+    <div class="card" style="margin-bottom:14px">
+      <h2>1. License Agreement</h2>
+      <div class="eula" id="eula">Loading…</div>
+      <label class="check" style="margin-top:12px"><input type="checkbox" id="accept"> I have read and accept the Creator Hub End User License Agreement.</label>
+    </div>
+    <div class="card" style="margin-bottom:14px">
+      <h2>2. License key</h2>
+      <label class="field"><span>Paste the key exactly as you received it (starts with CH1-)</span><textarea id="key" rows="3" spellcheck="false" style="min-height:70px;font-family:ui-monospace,Menlo,Consolas,monospace"></textarea></label>
+      <div id="keyInfo" class="muted small"></div>
+    </div>
+    <div class="card" style="margin-bottom:14px">
+      <h2>3. Activate</h2>
+      <div class="row"><button class="btn primary" id="online">Activate online</button><span class="muted small" id="onlineNote"></span></div>
+      <details style="margin-top:16px"><summary>No internet on this computer, or online activation unavailable? Activate offline</summary>
+        <div style="margin-top:12px">
+          <p class="muted">Send this request code to support. You'll receive an activation code back.</p>
+          <div class="row"><button class="btn" id="genReq">Generate request code</button><button class="btn" id="copyReq" hidden>Copy</button></div>
+          <pre class="code" id="req" hidden></pre>
+          <label class="field" style="margin-top:12px"><span>Activation code from support</span><textarea id="act" rows="3" spellcheck="false" style="min-height:70px;font-family:ui-monospace,Menlo,Consolas,monospace"></textarea></label>
+          <button class="btn primary" id="offline">Activate offline</button>
+        </div>
+      </details>
+      <div class="muted small" style="margin-top:14px">This device: <code id="device"></code></div>
+    </div>
+  </main>
+  <script src="license.js"></script>
+</body>
+</html>

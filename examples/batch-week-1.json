@@ -1,0 +1,21 @@
+{
+  "posts": [
+    {
+      "title": "Is that really your mom calling?",
+      "caption": "Scammers need about 3 seconds of your voice to clone it. Set up a family safe word tonight. Here's how.",
+      "media": "clips/voice-clone-safe-word.mp4",
+      "platforms": ["youtube", "tiktok", "instagram", "facebook"],
+      "aiGenerated": true,
+      "scheduledAt": "2026-10-05T09:00:00-07:00",
+      "overrides": {
+        "youtube": { "title": "AI Voice Clone Scams: The 10-Second Family Safe Word", "privacy": "public", "tags": "ai scams, voice clone, deepfake" }
+      }
+    },
+    {
+      "title": "Data brokers thread",
+      "caption": "Data brokers sell your address and phone number for about $1. Opt out of these five first. 🧵",
+      "platforms": ["threads", "x"],
+      "scheduledAt": "2026-10-05T12:00:00-07:00"
+    }
+  ]
+}

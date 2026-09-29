@@ -1,0 +1,7 @@
+node_modules/
+dist/
+# Vendor secrets — never commit or ship
+vendor/keys/
+vendor/ledger.json
+vendor/issued/
+vendor/activation-server/.wrangler/
