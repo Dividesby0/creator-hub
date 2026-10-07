@@ -6,11 +6,16 @@
 const path = require('path');
 const fs = require('fs');
 
+// The Google client ID is public by design (it appears in every sign-in URL), so it lives in code.
+// Only the client secret comes from the CH_GOOGLE_CLIENT_SECRET repository secret at build time.
+const GOOGLE_CLIENT_ID = '563271142019-a62fnn0eakieb1cq38krpl1e8nsgo0q6.apps.googleusercontent.com';
+
 let cache = null;
 function load() {
   if (cache) return cache;
   cache = {};
   try { cache = JSON.parse(fs.readFileSync(path.join(__dirname, 'builtin.json'), 'utf8')) || {}; } catch (_) {}
+  if (cache.google && cache.google.clientSecret && !cache.google.clientId) cache.google.clientId = GOOGLE_CLIENT_ID;
   if (process.env.CH_GOOGLE_CLIENT_ID && process.env.CH_GOOGLE_CLIENT_SECRET) {
     cache.google = { clientId: process.env.CH_GOOGLE_CLIENT_ID, clientSecret: process.env.CH_GOOGLE_CLIENT_SECRET };
   }

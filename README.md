@@ -49,10 +49,9 @@ Customers click **Connect** and sign in. That works because each build ships wit
 
 | Secret | Value |
 |---|---|
-| `CH_GOOGLE_CLIENT_ID` | Desktop-app OAuth client ID from the `decrypt443` Google Cloud project |
-| `CH_GOOGLE_CLIENT_SECRET` | its client secret |
+| `CH_GOOGLE_CLIENT_SECRET` | client secret of the Desktop-app OAuth client in the `decrypt443` Google Cloud project (the public client ID is in `src/oauth/builtin.js`) |
 
-Add them in GitHub under **Settings → Secrets and variables → Actions**. The build refuses to ship without them. For local dev, export the same names as environment variables.
+Add it in GitHub under **Settings → Secrets and variables → Actions**. The build refuses to ship without them. For local dev, export the same names as environment variables.
 
 Before the public can sign in, the Google app must leave **Testing**: finish *Branding* (home page, privacy policy, terms URLs, authorized domain), click **Publish app**, and submit for verification (sensitive scopes: YouTube upload/read, Analytics, Search Console, Business Profile). Until then only listed test users can sign in. TikTok, Meta (Instagram, Threads, Facebook) and X still use the advanced own-keys path below until their app reviews are done.
 

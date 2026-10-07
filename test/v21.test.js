@@ -115,3 +115,16 @@ test('first-run wizard flag defaults to not onboarded', () => {
   store.updateSettings({ onboarded: true });
   assert.strictEqual(new Store(path.dirname(store.file)).data.settings.onboarded, true);
 });
+
+test('built-in client ID is in code; CI only injects the secret', () => {
+  const fs2 = require('fs'), p2 = require('path');
+  const f = p2.join(__dirname, '..', 'src', 'oauth', 'builtin.json');
+  const had = fs2.existsSync(f) ? fs2.readFileSync(f) : null;
+  try {
+    fs2.writeFileSync(f, JSON.stringify({ google: { clientSecret: 'S' } }));
+    builtinMod._reset(null);
+    const g = builtinMod.builtin('google');
+    assert.match(g.clientId, /^563271142019-.*\.apps\.googleusercontent\.com$/);
+    assert.strictEqual(g.clientSecret, 'S');
+  } finally { had ? fs2.writeFileSync(f, had) : fs2.rmSync(f, { force: true }); builtinMod._reset(null); }
+});
