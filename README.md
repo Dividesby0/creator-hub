@@ -11,7 +11,7 @@ A local-first desktop app for macOS and Windows. It schedules, approves, publish
 - **One copy, always.** On Mac it offers to move itself into Applications, and after each update it moves older copies and old installer files to the Trash. On Windows the installer upgrades in place. The app tells you when a new version is out.
 - **Batch import.** Load a week of posts from one JSON file (see `examples/batch-week-1.json`).
 - **AI-content labels.** One checkbox sets YouTube's synthetic-media flag and TikTok's AIGC flag, and can append a disclosure hashtag.
-- **Private by design.** Credentials are encrypted with the OS keychain (macOS Keychain or Windows DPAPI) and never leave the computer except to talk to each platform.
+- **Private by design.** Sign-ins are encrypted on the computer (Windows DPAPI; on macOS a device-bound AES-256-GCM key until builds are Developer ID signed, which avoids Keychain password prompts after every update) and never leave it except to talk to each platform.
 
 > Creator Hub posts only while it is running. Leave "Keep running in the background" and "Start at login" on, and don't let the computer sleep at posting time.
 
@@ -209,7 +209,7 @@ After deploying, add a rate-limiting rule for `/v1/*` in the Cloudflare dashboar
   - An activation copied to another computer fails.
   - A leak of the server's activation key can't mint new license keys.
 - **Seat limits:** enforced by an atomic SQL insert on the server; tested against concurrent activation races.
-- **Local secrets:** platform tokens and the license file are encrypted with the OS keychain via Electron `safeStorage`, falling back to AES-256-GCM.
+- **Local secrets:** platform tokens and the license file are encrypted locally: Windows via Electron `safeStorage` (DPAPI); macOS with AES-256-GCM keyed to the device until builds are Developer ID signed (then set `"macKeychain": true` in package.json to use the Keychain).
 - **Renderer:** runs sandboxed with context isolation, no Node access, and a strict script CSP.
 - **Limit:** no client-side licensing is uncrackable. Code-sign, enable Electron fuses at packaging time, and ship updates regularly. See `docs/LICENSING-AND-PRICING.md`.
 

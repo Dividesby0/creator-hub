@@ -18,16 +18,21 @@ if (!app.requestSingleInstanceLock()) { app.quit(); process.exit(0); }
 let win, tray, store, engine, license, insights, quitting = false, blockerId = null, updateInfo = null;
 
 // ---- at-rest encryption: OS keychain (macOS Keychain / Windows DPAPI) via safeStorage ----
+// macOS asks for the login password whenever an app's signature changes, and until Creator Hub is
+// signed with an Apple Developer ID every update has a new ad-hoc signature. So on macOS sign-ins are
+// encrypted with the device-bound key below instead of the Keychain (no prompts). Set
+// "macKeychain": true in package.json once builds are Developer ID signed. Windows (DPAPI) never prompts.
+const useOsKeychain = () => process.platform !== 'darwin' || !!pkg.macKeychain;
 function makeBox() {
-  // Platform tokens: prefer the OS keychain, but never let a keychain problem (denied prompt,
-  // forgotten keychain password, signature change after an update) break the app.
   return {
     encrypt(s) {
-      try { if (safeStorage.isEncryptionAvailable()) return 'ss1:' + safeStorage.encryptString(s).toString('base64'); } catch (_) {}
+      if (useOsKeychain()) { try { if (safeStorage.isEncryptionAvailable()) return 'ss1:' + safeStorage.encryptString(s).toString('base64'); } catch (_) {} }
       return fallback.encrypt(s);
     },
     decrypt(s) {
-      if (s.startsWith('ss1:')) return safeStorage.decryptString(Buffer.from(s.slice(4), 'base64'));
+      // Older versions stored some values in the Keychain. Reading one may ask once; if the user
+      // declines, the value is treated as missing (that account just needs to be connected again).
+      if (s.startsWith('ss1:')) { try { return safeStorage.decryptString(Buffer.from(s.slice(4), 'base64')); } catch (_) { return '{}'; } }
       return fallback.decrypt(s);
     }
   };
@@ -272,6 +277,20 @@ async function cleanupOldCopies() {
   if (removed.length) notify('toast', `Removed ${removed.length} old Creator Hub file${removed.length > 1 ? 's' : ''} (moved to Trash).`);
 }
 
+// One-time move of values older versions kept in the macOS Keychain to device encryption,
+// so the Keychain password prompt never comes back after updates.
+function migrateKeychainValues(box) {
+  if (useOsKeychain() || store.data.keychainMigrated) return;
+  let moved = 0;
+  const conv = v => { if (typeof v === 'string' && v.startsWith('ss1:')) { moved++; return box.encrypt(box.decrypt(v)); } return v; };
+  for (const a of Object.values(store.data.accounts || {})) for (const k of ['secret', 'secretConfig']) if (a[k]) a[k] = conv(a[k]);
+  const ins = store.data.insights;
+  if (ins) for (const k of ['secret', 'secretConfig']) if (ins[k]) ins[k] = conv(ins[k]);
+  store.data.keychainMigrated = true;
+  store.save();
+  if (moved) store.addLog('info', `Moved ${moved} saved sign-in value(s) out of the Keychain.`);
+}
+
 async function runUpdateCheck() {
   updateInfo = await checkForUpdate({ feedUrl: pkg.updateFeed, currentVersion: pkg.version });
   notify('changed');
@@ -284,6 +303,7 @@ app.whenReady().then(async () => {
   store = new Store(dir);
   const box = makeBox();
   license = new LicenseManager({ dir, box: fallback, legacyBox: box });
+  migrateKeychainValues(box);
   engine = new Engine({ store, box, openExternal, notify });
   insights = new InsightsService({ store, box, openExternal });
   // A YouTube (Google) sign-in also powers Insights, so customers sign in to Google once.
