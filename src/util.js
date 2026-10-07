@@ -52,7 +52,7 @@ function waitForAuthCode({ authUrl, state, openExternal, timeoutMs = 5 * 60 * 10
       const err = u.searchParams.get('error');
       const code = u.searchParams.get('code');
       const gotState = u.searchParams.get('state');
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', Connection: 'close' });
       if (err || !code || gotState !== state) {
         res.end('<h2>Connection failed.</h2><p>You can close this tab and try again in Creator Hub.</p>');
         finish(new Error(err ? `Authorization denied: ${err} ${u.searchParams.get('error_description') || ''}` : 'Invalid OAuth response (state mismatch or missing code)'));
@@ -67,6 +67,7 @@ function waitForAuthCode({ authUrl, state, openExternal, timeoutMs = 5 * 60 * 10
       if (done) return; done = true;
       clearTimeout(timer);
       server.close();
+      setImmediate(() => server.closeAllConnections?.()); // drop browser keep-alive sockets so the next sign-in gets a fresh listener
       e ? reject(e) : resolve(code);
     }
     server.on('error', e => finish(new Error(`Could not start local login listener on port ${OAUTH_PORT}: ${e.message}`)));

@@ -5,3 +5,6 @@ vendor/keys/
 vendor/ledger.json
 vendor/issued/
 vendor/activation-server/.wrangler/
+
+# Built-in OAuth app credentials — injected by CI at build time
+src/oauth/builtin.json

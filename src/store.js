@@ -21,7 +21,8 @@ const DEFAULT_DATA = {
     aiHashtag: '#AIgenerated',     // appended when a post is marked AI-generated
     appendAiHashtag: true,
     analyticsIntervalHours: 6,
-    maxAttempts: 3
+    maxAttempts: 3,
+    onboarded: false              // first-run setup wizard completed or skipped
   },
   log: []
 };

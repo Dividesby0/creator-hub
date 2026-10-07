@@ -191,7 +191,16 @@ function registerIpc() {
 
   // ---------- Insights ----------
   handle('insights:saveConfig', cfg => insights.saveConfig(cfg));
-  handle('insights:connect', () => insights.connect());
+  // One Google sign-in: unless the user set their own Insights-only keys, connect through YouTube
+  // (which requests every Insights scope) and share the token.
+  handle('insights:connect', async () => {
+    if (insights.hasOwnClient()) return insights.connect();
+    const profile = await engine.connect('youtube');
+    await insights.refreshResources().catch(e => { insights.s.lastError = e.message; });
+    return { email: profile.email || profile.name };
+  });
+  handle('onboarding:finish', () => { store.updateSettings({ onboarded: true }); return true; });
+  handle('onboarding:restart', () => { store.updateSettings({ onboarded: false }); return true; });
   handle('insights:disconnect', () => insights.disconnect());
   handle('insights:resources', () => insights.refreshResources());
   handle('insights:select', patch => insights.select(patch));
@@ -276,6 +285,12 @@ app.whenReady().then(async () => {
   license = new LicenseManager({ dir, box: fallback, legacyBox: box });
   engine = new Engine({ store, box, openExternal, notify });
   insights = new InsightsService({ store, box, openExternal });
+  // A YouTube (Google) sign-in also powers Insights, so customers sign in to Google once.
+  engine.onConnected = async (pid, secret) => {
+    if (pid === 'youtube' && !insights.hasOwnClient() && insights.adoptGoogle(secret)) {
+      insights.refreshResources().catch(e => { insights.s.lastError = e.message; store.save(); });
+    }
+  };
   store.onChange(() => notify('changed'));
   registerIpc();
   createWindow();

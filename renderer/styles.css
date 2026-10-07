@@ -130,3 +130,23 @@ nav .badge.new { background: var(--ok); }
 .barrow .bv { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
 .hl { padding: 9px 12px; border-left: 3px solid var(--accent); background: var(--panel2); border-radius: 6px; margin-bottom: 8px; }
 .hl.good { border-left-color: var(--ok); } .hl.warn { border-left-color: var(--warn); }
+
+/* ---------- v2.1: first-run setup ---------- */
+body.onboarding nav { display: none; }
+.wiz { max-width: 760px; margin: 10px auto 0; }
+.wiz-steps { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.wiz-step { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; padding: 6px 12px 6px 6px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); }
+.wiz-step span { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--panel2); font-size: 12px; font-weight: 600; }
+.wiz-step.on { color: var(--text); border-color: var(--accent); }
+.wiz-step.on span { background: var(--accent); color: #fff; }
+.wiz-step.done span { background: var(--ok); color: #fff; }
+.wiz-body { padding: 28px 30px; }
+.wiz-body h1 { font-size: 26px; margin-bottom: 8px; }
+.wiz-list { line-height: 2; font-size: 15px; padding-left: 20px; }
+.wiz-acct { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius); margin-top: 10px; background: var(--bg); }
+.wiz-acct.ok { border-color: color-mix(in srgb, var(--ok) 50%, var(--line)); }
+.wiz-opt { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius); margin-top: 10px; cursor: pointer; background: var(--bg); }
+.wiz-opt input { margin-top: 3px; width: 16px; height: 16px; }
+.wiz-card { cursor: pointer; transition: border-color .15s; }
+.wiz-card:hover { border-color: var(--accent); }
+details summary { cursor: pointer; }

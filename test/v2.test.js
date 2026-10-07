@@ -224,9 +224,9 @@ test('service falls back to the YouTube OAuth client and stores the Google secre
   const store = new Store(tmp());
   store.setAccount('youtube', { config: { clientId: 'yt-client' }, secretConfig: box.encrypt(JSON.stringify({ clientSecret: 'yt-secret' })) });
   const svc = new InsightsService({ store, box, openExternal: () => {} });
-  assert.deepStrictEqual(svc.config(), { clientId: 'yt-client', clientSecret: 'yt-secret' });
+  assert.deepStrictEqual(svc.config(), { clientId: 'yt-client', clientSecret: 'yt-secret', source: 'own' });
   assert.strictEqual(svc.view().usingYouTubeClient, true);
   svc.saveConfig({ clientId: 'own', clientSecret: 'own-secret' });
-  assert.deepStrictEqual(svc.config(), { clientId: 'own', clientSecret: 'own-secret' });
+  assert.deepStrictEqual(svc.config(), { clientId: 'own', clientSecret: 'own-secret', source: 'own' });
   assert.ok(!fs.readFileSync(store.file, 'utf8').includes('own-secret'));
 });

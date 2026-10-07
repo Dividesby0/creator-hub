@@ -3,22 +3,28 @@
 const { request, toForm, randomVerifier, challengeBase64Url, waitForAuthCode, REDIRECT_URI,
   fileInfo, readChunk, captionFor, ApiError } = require('../util');
 const crypto = require('crypto');
+const { googleClient, builtin } = require('../oauth/builtin');
+const { SCOPES: INSIGHT_SCOPES } = require('../insights/google');
 
 const AUTH = 'https://accounts.google.com/o/oauth2/v2/auth';
 const TOKEN = 'https://oauth2.googleapis.com/token';
 const API = 'https://www.googleapis.com/youtube/v3';
 const UPLOAD = 'https://www.googleapis.com/upload/youtube/v3/videos';
-const SCOPES = ['https://www.googleapis.com/auth/youtube.upload', 'https://www.googleapis.com/auth/youtube.readonly'];
+// One Google sign-in covers posting to YouTube and every Insights source (all read-only except upload).
+const SCOPES = [...new Set(['https://www.googleapis.com/auth/youtube.upload', 'https://www.googleapis.com/auth/youtube.readonly', ...INSIGHT_SCOPES])];
+const clientFor = ctx => googleClient({ own: ctx.account.config, tokenClientId: ctx.account.secret?.clientId });
 const CHUNK = 8 * 1024 * 1024; // multiple of 256 KiB as required
 
 async function refresh(ctx) {
   const s = ctx.account.secret;
   if (s.expiresAt && Date.now() < s.expiresAt - 60_000) return s.accessToken;
+  const c = clientFor(ctx);
+  if (!c) throw new Error('Google sign-in is not set up. Reconnect YouTube.');
   const { body } = await request('YouTube', TOKEN, {
     method: 'POST',
     body: toForm({
-      client_id: ctx.account.config.clientId,
-      client_secret: ctx.account.config.clientSecret,
+      client_id: c.clientId,
+      client_secret: c.clientSecret,
       refresh_token: s.refreshToken,
       grant_type: 'refresh_token'
     })
@@ -32,10 +38,13 @@ module.exports = {
   id: 'youtube',
   name: 'YouTube',
   auth: 'oauth',
+  provider: 'google',
+  oneClick: () => !!builtin('google'),
+  scopes: SCOPES,
   supports: { text: false, image: false, video: true },
   configFields: [
-    { key: 'clientId', label: 'OAuth Client ID (Desktop app)' },
-    { key: 'clientSecret', label: 'OAuth Client Secret', secret: true }
+    { key: 'clientId', label: 'OAuth Client ID (Desktop app)', advanced: true },
+    { key: 'clientSecret', label: 'OAuth Client Secret', secret: true, advanced: true }
   ],
   postOptions: [
     { key: 'title', label: 'Video title (max 100)', type: 'text' },
@@ -44,26 +53,32 @@ module.exports = {
   ],
 
   async connect(ctx) {
-    const { clientId, clientSecret } = ctx.account.config;
-    if (!clientId || !clientSecret) throw new Error('Enter the Client ID and Client Secret first.');
+    const c = googleClient({ own: ctx.account.config });
+    if (!c) throw new Error('This copy of Creator Hub has no built-in Google sign-in. Open "Use my own developer keys" and enter a Google OAuth Client ID and Secret.');
     const verifier = randomVerifier();
     const state = crypto.randomUUID();
     const url = `${AUTH}?` + new URLSearchParams({
-      client_id: clientId, redirect_uri: REDIRECT_URI, response_type: 'code', scope: SCOPES.join(' '),
-      access_type: 'offline', prompt: 'consent', state,
+      client_id: c.clientId, redirect_uri: REDIRECT_URI, response_type: 'code', scope: SCOPES.join(' '),
+      access_type: 'offline', prompt: 'consent', include_granted_scopes: 'true', state,
       code_challenge: challengeBase64Url(verifier), code_challenge_method: 'S256'
     });
     const code = await waitForAuthCode({ authUrl: url, state, openExternal: ctx.openExternal });
     const { body } = await request('YouTube', TOKEN, {
       method: 'POST',
-      body: toForm({ client_id: clientId, client_secret: clientSecret, code, code_verifier: verifier,
+      body: toForm({ client_id: c.clientId, client_secret: c.clientSecret, code, code_verifier: verifier,
         grant_type: 'authorization_code', redirect_uri: REDIRECT_URI })
     });
-    if (!body.refresh_token) throw new Error('Google did not return a refresh token. Remove the app from your Google account permissions and connect again.');
-    const secret = { accessToken: body.access_token, refreshToken: body.refresh_token, expiresAt: Date.now() + body.expires_in * 1000 };
-    const ch = await request('YouTube', `${API}/channels?part=snippet&mine=true`, { headers: { Authorization: `Bearer ${secret.accessToken}` } });
-    const c = ch.body.items?.[0];
-    return { secret, profile: { name: c?.snippet?.title || 'YouTube channel', id: c?.id } };
+    if (!body.refresh_token) throw new Error('Google did not return a refresh token. Remove Creator Hub at myaccount.google.com/permissions, then connect again.');
+    let email = '';
+    try { email = JSON.parse(Buffer.from(body.id_token.split('.')[1], 'base64url')).email || ''; } catch (_) {}
+    const secret = { accessToken: body.access_token, refreshToken: body.refresh_token, expiresAt: Date.now() + body.expires_in * 1000,
+      scope: body.scope || '', email, clientId: c.clientId };
+    let c0 = null;
+    try {
+      const ch = await request('YouTube', `${API}/channels?part=snippet&mine=true`, { headers: { Authorization: `Bearer ${secret.accessToken}` } });
+      c0 = ch.body.items?.[0];
+    } catch (_) {}
+    return { secret, profile: { name: c0?.snippet?.title || email || 'Google account', id: c0?.id, email } };
   },
 
   async publish(post, ctx) {

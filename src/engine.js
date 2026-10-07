@@ -32,7 +32,7 @@ class Engine {
       const a = this.store.getAccount(p.id) || {};
       const secretCfg = this._dec(a.secretConfig);
       return {
-        id: p.id, name: p.name, auth: p.auth, supports: p.supports,
+        id: p.id, name: p.name, auth: p.auth, supports: p.supports, oneClick: !!p.oneClick?.(), provider: p.provider || null,
         configFields: p.configFields.map(f => ({ ...f, value: f.secret ? '' : (a.config?.[f.key] ?? f.default ?? ''), hasValue: f.secret ? !!secretCfg[f.key] : undefined })),
         postOptions: p.postOptions || [],
         connected: !!a.secret, profile: a.profile || null, connectedAt: a.connectedAt || null, lastError: a.lastError || null
@@ -56,8 +56,7 @@ class Engine {
   }
 
   _ctx(pid) {
-    const a = this.store.getAccount(pid);
-    if (!a) throw new Error(`${this.platforms[pid].name} is not set up.`);
+    const a = this.store.getAccount(pid) || {};
     const account = { config: { ...(a.config || {}), ...this._dec(a.secretConfig) }, secret: this._dec(a.secret), profile: a.profile };
     return {
       account,
@@ -79,6 +78,7 @@ class Engine {
       const a = this.store.getAccount(pid);
       this.store.setAccount(pid, { ...a, secret: this._enc(secret), profile, connectedAt: new Date().toISOString(), lastError: null });
       this.store.addLog('info', `${p.name} connected as ${profile.name}`); this.store.save();
+      try { await this.onConnected?.(pid, secret, profile); } catch (_) {}
       return profile;
     } catch (e) {
       const a = this.store.getAccount(pid);

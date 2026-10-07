@@ -36,6 +36,10 @@ contextBridge.exposeInMainWorld('hub', {
   },
   settings: { update: patch => call('settings:update', patch) },
   analytics: { refresh: () => call('analytics:refresh') },
+  onboarding: {
+    finish: () => call('onboarding:finish'),
+    restart: () => call('onboarding:restart')
+  },
   insights: {
     saveConfig: cfg => call('insights:saveConfig', cfg),
     connect: () => call('insights:connect'),

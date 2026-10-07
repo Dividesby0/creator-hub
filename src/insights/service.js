@@ -3,6 +3,7 @@
 // (Google sources + every connected social platform).
 const { GoogleInsights } = require('./google');
 const { rangeFor, compare, delta } = require('./ranges');
+const { googleClient } = require('../oauth/builtin');
 
 const DEFAULT = { config: {}, secretConfig: '', secret: '', selections: {}, resources: null, cache: {}, lastError: null };
 
@@ -23,23 +24,36 @@ class InsightsService {
   _enc(o) { return this.box.encrypt(JSON.stringify(o || {})); }
   _dec(str) { if (!str) return {}; try { return JSON.parse(this.box.decrypt(str)); } catch (_) { return {}; } }
 
-  // Falls back to the YouTube OAuth client so users enter it once.
+  // Which Google client to use: the one that issued our token, else the user's own Insights keys,
+  // else their YouTube keys, else Creator Hub's built-in app (customers never type keys).
   config() {
     const own = { ...this.s.config, ...this._dec(this.s.secretConfig) };
-    if (own.clientId && own.clientSecret) return own;
     const yt = this.store.getAccount('youtube');
-    if (yt) {
-      const ytSecret = (() => { try { return JSON.parse(this.box.decrypt(yt.secretConfig)); } catch (_) { return {}; } })();
-      return { clientId: own.clientId || yt.config?.clientId, clientSecret: own.clientSecret || ytSecret.clientSecret };
-    }
-    return own;
+    const ytOwn = yt ? { ...(yt.config || {}), ...this._dec(yt.secretConfig) } : null;
+    const tokenClientId = this._dec(this.s.secret).clientId;
+    const c = googleClient({ own, alt: ytOwn, tokenClientId });
+    return c ? { clientId: c.clientId, clientSecret: c.clientSecret, source: c.source } : {};
   }
+
+  /** Reuse the YouTube Google sign-in (it requests every Insights scope) so there is one sign-in. */
+  adoptGoogle(secret) {
+    const scope = String(secret?.scope || '');
+    if (!secret?.refreshToken || !/analytics\.readonly/.test(scope)) return false;
+    this.s.secret = this._enc({ accessToken: secret.accessToken, refreshToken: secret.refreshToken, expiresAt: secret.expiresAt,
+      scope, email: secret.email || '', clientId: secret.clientId });
+    this.s.cache = {}; this.s.lastError = null;
+    this.store.save();
+    return true;
+  }
+
+  /** True when the user set their own Insights-only keys (power users). */
+  hasOwnClient() { const own = { ...this.s.config, ...this._dec(this.s.secretConfig) }; return !!(own.clientId && own.clientSecret); }
 
   view() {
     const secret = this._dec(this.s.secret);
     const cfg = this.config();
     return {
-      connected: !!secret.refreshToken, email: secret.email || '', hasClient: !!(cfg.clientId && cfg.clientSecret),
+      connected: !!secret.refreshToken, email: secret.email || '', hasClient: !!(cfg.clientId && cfg.clientSecret), oneClick: cfg.source === 'builtin' || (!this.hasOwnClient() && !!cfg.clientId),
       clientId: this.s.config.clientId || '', usingYouTubeClient: !this.s.config.clientId && !!cfg.clientId,
       selections: this.s.selections, resources: this.s.resources, lastError: this.s.lastError
     };

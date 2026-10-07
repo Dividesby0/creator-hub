@@ -1,7 +1,7 @@
 {
   "name": "creator-hub",
   "productName": "Creator Hub",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Local-first scheduler, approval queue, publisher and analytics for YouTube, TikTok, Instagram, Threads, Facebook and X.",
   "main": "main.js",
   "license": "UNLICENSED",

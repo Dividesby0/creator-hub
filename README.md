@@ -2,6 +2,7 @@
 
 A local-first desktop app for macOS and Windows. It schedules, approves, publishes, and tracks posts on **YouTube, TikTok, Instagram, Threads, Facebook Pages, and X**, and includes a built-in commercial licensing system.
 
+- **2-minute setup (v2.1).** A first-run wizard walks customers through connecting accounts and choosing how posting works. YouTube and every Google source connect with **one click and one Google sign-in**. No developer keys needed. Power users can still use their own keys under *Advanced*.
 - **Compose once, post everywhere.** Captions can be overridden per platform, with live character-limit and X-cost counters.
 - **Approval queue.** Nothing goes live until you approve it (you can turn this off).
 - **Calendar, queue, and retries.** Each platform retries on its own, so a failure on X never re-posts to TikTok.
@@ -23,7 +24,7 @@ Requires **Node.js 20+**.
 ```bash
 npm install
 npm start          # launches the app
-npm test           # 24 automated tests: licensing, scheduler, platform flows, activation server
+npm test           # 45 automated tests: licensing, scheduler, platform flows, activation server
 ```
 
 **Build installers.** Mac builds must be made on a Mac, and Windows builds are best made on Windows:
@@ -43,7 +44,20 @@ Unsigned apps show scary warnings that hurt sales. electron-builder picks signin
 
 ## 2. Connect the platforms
 
-Each platform needs a free **developer app** that you own. Creator Hub uses one fixed login redirect for the platforms that need it:
+### One-click sign-in (built-in apps), vendor setup, done once by you
+Customers click **Connect** and sign in. That works because each build ships with Creator Hub's own OAuth app credentials, injected by CI from repository secrets (never committed):
+
+| Secret | Value |
+|---|---|
+| `CH_GOOGLE_CLIENT_ID` | Desktop-app OAuth client ID from the `decrypt443` Google Cloud project |
+| `CH_GOOGLE_CLIENT_SECRET` | its client secret |
+
+Add them in GitHub under **Settings → Secrets and variables → Actions**. The build refuses to ship without them. For local dev, export the same names as environment variables.
+
+Before the public can sign in, the Google app must leave **Testing**: finish *Branding* (home page, privacy policy, terms URLs, authorized domain), click **Publish app**, and submit for verification (sensitive scopes: YouTube upload/read, Analytics, Search Console, Business Profile). Until then only listed test users can sign in. TikTok, Meta (Instagram, Threads, Facebook) and X still use the advanced own-keys path below until their app reviews are done.
+
+### Own developer keys (advanced)
+Each platform below can also use a free **developer app** that you own. Creator Hub uses one fixed login redirect for the platforms that need it:
 
 ```
 http://127.0.0.1:8765/callback/

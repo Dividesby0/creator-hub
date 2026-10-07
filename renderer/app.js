@@ -43,6 +43,7 @@ async function refresh() {
 
 function go(v) {
   view = v;
+  document.body.classList.toggle('onboarding', v === 'welcome');
   $$('#nav button').forEach(b => b.classList.toggle('active', b.dataset.view === v));
   render();
 }
@@ -50,7 +51,7 @@ function go(v) {
 function render() {
   if (!S) return;
   const m = $('#main');
-  const fn = { dashboard, compose, queue, calendar, approvals, analytics, accounts, settings, insights: Insights.render }[view];
+  const fn = { dashboard, compose, queue, calendar, approvals, analytics, accounts, settings, welcome, insights: Insights.render }[view];
   // Don't clobber a half-typed form on background refreshes
   if ((view === 'compose' || view === 'insights') && m.dataset.view === view && document.activeElement && m.contains(document.activeElement) && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
   m.dataset.view = view;
@@ -74,7 +75,7 @@ function dashboard() {
   return `
   <div class="header"><div><h1>Dashboard</h1><div class="muted">Everything scheduled, waiting, and working.</div></div>
     <div class="row"><button class="btn" data-action="import">Import batch</button><button class="btn primary" data-go="compose">New post</button></div></div>
-  ${S.accounts.some(a => a.connected) ? '' : `<div class="note info">Start in <a data-go="accounts">Accounts</a>: connect at least one platform. Setup steps for each are in the README.</div>`}
+  ${S.accounts.some(a => a.connected) ? '' : `<div class="note info">Start in <a data-go="accounts">Accounts</a>: connect at least one platform — YouTube is one click.</div>`}
   ${failed.length ? `<div class="note">${failed.length} post${failed.length > 1 ? 's' : ''} failed on at least one platform. <a data-go="queue">Review in Queue</a>.</div>` : ''}
   <div class="grid g4" style="margin-bottom:14px">
     <div class="card stat"><div class="muted small">Total followers</div><div class="n">${fmtN(totalF)}</div><div class="muted small">across connected accounts</div></div>
@@ -289,22 +290,86 @@ const DEV_PORTALS = {
   facebook: 'https://developers.facebook.com/apps',
   x: 'https://developer.x.com/en/portal/dashboard'
 };
-function accounts() {
-  return `<div class="header"><div><h1>Accounts</h1><div class="muted">Credentials are encrypted with your OS keychain and never leave this computer except to talk to each platform.</div></div></div>
-  <div class="note info">For platforms that use a login redirect (YouTube, TikTok, X), register this redirect URI in the developer app: <code>http://127.0.0.1:8765/callback/</code></div>
-  <div class="grid g2">${S.accounts.map(a => `<div class="card">
-    <div class="row" style="justify-content:space-between;margin-bottom:10px"><div class="row">${chip(a.id)}${a.connected ? `<span class="small" style="color:var(--ok)">Connected as ${esc(a.profile?.name)}</span>` : '<span class="muted small">Not connected</span>'}</div>
-      <a class="small" data-url="${DEV_PORTALS[a.id]}">Developer portal ↗</a></div>
-    ${a.lastError ? `<div class="note">${esc(a.lastError)}</div>` : ''}
-    <form data-account="${a.id}">
+const ONE_CLICK_COPY = {
+  youtube: 'Post videos and see YouTube, Google Analytics, Search Console and Business Profile stats — one Google sign-in.'
+};
+function ownKeysForm(a) {
+  return `<form data-account="${a.id}">
     ${a.configFields.map(f => f.type === 'select'
       ? `<label class="field"><span>${esc(f.label)}</span><select name="${f.key}">${f.options.map(o => `<option ${(f.value || f.default) === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>${f.help ? `<div class="muted small" style="margin-top:4px">${esc(f.help)}</div>` : ''}</label>`
       : `<label class="field"><span>${esc(f.label)}</span><input type="${f.secret ? 'password' : 'text'}" name="${f.key}" value="${esc(f.value)}" placeholder="${f.secret && f.hasValue ? '•••••• saved (leave blank to keep)' : ''}" autocomplete="off">${f.help ? `<div class="muted small" style="margin-top:4px">${esc(f.help)}</div>` : ''}</label>`).join('')}
-    </form>
-    <div class="row">
-      <button class="btn primary" data-action="connect" data-pid="${a.id}">${a.connected ? 'Reconnect' : a.auth === 'oauth' ? 'Save & sign in' : 'Save & verify'}</button>
-      ${a.connected ? `<button class="btn danger" data-action="disconnect" data-pid="${a.id}">Disconnect</button>` : ''}
-    </div></div>`).join('')}</div>`;
+    </form>`;
+}
+function accountStatus(a) {
+  return a.connected ? `<span class="small" style="color:var(--ok)">✓ Connected as ${esc(a.profile?.name)}</span>` : '<span class="muted small">Not connected</span>';
+}
+function accountCard(a) {
+  const head = `<div class="row" style="justify-content:space-between;margin-bottom:10px"><div class="row">${chip(a.id)}${accountStatus(a)}</div></div>
+    ${a.lastError ? `<div class="note">${esc(a.lastError)}</div>` : ''}`;
+  const disconnect = a.connected ? `<button class="btn danger" data-action="disconnect" data-pid="${a.id}">Disconnect</button>` : '';
+  if (a.oneClick) {
+    return `<div class="card">${head}
+      <p class="muted small" style="margin-top:0">${esc(ONE_CLICK_COPY[a.id] || '')}</p>
+      <div class="row"><button class="btn primary" data-action="connectOneClick" data-pid="${a.id}">${a.connected ? 'Reconnect' : a.provider === 'google' ? 'Connect with Google' : 'Connect'}</button>${disconnect}</div>
+      <details style="margin-top:12px"><summary class="muted small">Use my own developer keys (advanced)</summary><div style="margin-top:10px">
+        <div class="muted small" style="margin-bottom:8px">Only needed if you want to use your own ${esc(a.name)} developer app. Redirect URI: <code>http://127.0.0.1:8765/callback/</code> · <a data-url="${DEV_PORTALS[a.id]}">Developer portal ↗</a></div>
+        ${ownKeysForm(a)}<button class="btn" data-action="connect" data-pid="${a.id}">Save &amp; sign in with my keys</button></div></details></div>`;
+  }
+  return `<div class="card">${head}
+    <div class="muted small" style="margin:-2px 0 10px">Uses your own ${esc(a.name)} developer app for now — one-click sign-in for ${esc(a.name)} is coming in an update. ${a.auth === 'oauth' ? 'Redirect URI: <code>http://127.0.0.1:8765/callback/</code> · ' : ''}<a data-url="${DEV_PORTALS[a.id]}">Developer portal ↗</a></div>
+    ${ownKeysForm(a)}
+    <div class="row"><button class="btn primary" data-action="connect" data-pid="${a.id}">${a.connected ? 'Reconnect' : a.auth === 'oauth' ? 'Save & sign in' : 'Save & verify'}</button>${disconnect}</div></div>`;
+}
+function accounts() {
+  const one = S.accounts.filter(a => a.oneClick), rest = S.accounts.filter(a => !a.oneClick);
+  return `<div class="header"><div><h1>Accounts</h1><div class="muted">Sign-ins are encrypted on this computer and only used to talk to each platform.</div></div>
+    <button class="btn" data-action="runSetup">Run setup again</button></div>
+  ${one.length ? `<div class="grid g2" style="margin-bottom:14px">${one.map(accountCard).join('')}</div>` : ''}
+  ${rest.length ? `<h2 style="margin:18px 0 10px">Advanced setup</h2><div class="grid g2">${rest.map(accountCard).join('')}</div>` : ''}`;
+}
+
+// ================= First-run setup =================
+let wizStep = 0;
+function welcome() {
+  const steps = ['Welcome', 'Connect', 'Posting', 'Done'];
+  const dots = `<div class="wiz-steps">${steps.map((t, i) => `<div class="wiz-step ${i === wizStep ? 'on' : i < wizStep ? 'done' : ''}"><span>${i < wizStep ? '✓' : i + 1}</span>${t}</div>`).join('')}</div>`;
+  const nav = (back, next, nextLabel = 'Continue') => `<div class="row" style="justify-content:space-between;margin-top:22px">
+    ${back ? '<button class="btn" data-action="wizBack">Back</button>' : '<span></span>'}
+    <div class="row"><a class="small muted" data-action="wizSkip">Skip setup</a>${next ? `<button class="btn primary" data-action="wizNext">${nextLabel}</button>` : ''}</div></div>`;
+  let body = '';
+  if (wizStep === 0) {
+    body = `<h1>Welcome to Creator Hub</h1>
+      <p class="muted" style="font-size:15px;line-height:1.6">Plan, approve and publish to all your channels from one place, and see every number in one dashboard. Setup takes about two minutes:</p>
+      <ol class="wiz-list"><li><b>Connect your accounts</b> — sign in, no technical setup.</li><li><b>Choose how posting works</b> — review first, or post automatically.</li><li><b>Start creating.</b></li></ol>
+      ${nav(false, true, 'Get started')}`;
+  } else if (wizStep === 1) {
+    const g = S.accounts.filter(a => a.oneClick), other = S.accounts.filter(a => !a.oneClick);
+    body = `<h1>Connect your accounts</h1>
+      <p class="muted">Click Connect, sign in, and click <b>Allow</b>. Your sign-ins stay encrypted on this computer.</p>
+      ${g.map(a => `<div class="wiz-acct ${a.connected ? 'ok' : ''}"><div>${chip(a.id)}<div class="muted small" style="margin-top:6px">${esc(ONE_CLICK_COPY[a.id] || '')}</div>${a.lastError && !a.connected ? `<div class="small" style="color:var(--bad);margin-top:4px">${esc(a.lastError)}</div>` : ''}</div>
+        ${a.connected ? `<span class="small" style="color:var(--ok)">✓ ${esc(a.profile?.name)}</span>` : `<button class="btn primary" data-action="connectOneClick" data-pid="${a.id}">${a.provider === 'google' ? 'Connect with Google' : 'Connect'}</button>`}</div>`).join('')}
+      ${other.length ? `<div class="wiz-acct muted"><div><div class="row">${other.map(a => chip(a.id)).join('')}</div><div class="small" style="margin-top:6px">One-click sign-in for these is coming in an update. You can connect them later in <b>Accounts</b>.</div></div>${other.some(a => a.connected) ? `<span class="small" style="color:var(--ok)">✓ ${other.filter(a => a.connected).length} connected</span>` : ''}</div>` : ''}
+      ${nav(true, true, S.accounts.some(a => a.connected) ? 'Continue' : 'Continue without connecting')}`;
+  } else if (wizStep === 2) {
+    const s = S.settings;
+    const opt = (k, title, help) => `<label class="wiz-opt"><input type="checkbox" data-setting="${k}" ${s[k] ? 'checked' : ''}><div><b>${title}</b><div class="muted small">${help}</div></div></label>`;
+    body = `<h1>How should posting work?</h1>
+      ${opt('requireApproval', 'Let me approve posts before they go out', 'Recommended. New posts wait in Approvals until you click Approve.')}
+      ${opt('keepRunningInBackground', 'Keep posting when the window is closed', 'Creator Hub stays in the menu bar and posts on schedule.')}
+      ${opt('launchAtLogin', 'Start Creator Hub when I turn on my computer', 'So scheduled posts never get missed.')}
+      ${nav(true, true)}`;
+  } else {
+    const n = S.accounts.filter(a => a.connected).length;
+    body = `<h1>You're all set 🎉</h1>
+      <p class="muted" style="font-size:15px">${n ? `${n} account${n > 1 ? 's' : ''} connected.` : 'You can connect accounts any time in Accounts.'} Here's where to go next:</p>
+      <div class="grid g3" style="margin-top:14px">
+        <div class="card wiz-card" data-action="wizFinish" data-to="compose"><h3>✍️ Write your first post</h3><div class="muted small">Write once, post everywhere.</div></div>
+        <div class="card wiz-card" data-action="wizFinish" data-to="insights"><h3>📈 See your numbers</h3><div class="muted small">All your channels in one dashboard.</div></div>
+        <div class="card wiz-card" data-action="wizFinish" data-to="dashboard"><h3>🏠 Go to dashboard</h3><div class="muted small">Your schedule at a glance.</div></div>
+      </div>
+      ${nav(true, false)}`;
+  }
+  return `<div class="wiz">${dots}<div class="card wiz-body">${body}</div></div>`;
 }
 
 // ================= Settings =================
@@ -412,6 +477,16 @@ document.addEventListener('click', async e => {
       try { const p = await run(() => hub.accounts.connect(pid)); toast(`Connected as ${p.name}.`); } catch (_) {}
       await refresh(); break;
     }
+    case 'connectOneClick': {
+      toast('Your browser will open — sign in and click Allow…');
+      try { const p = await run(() => hub.accounts.connect(pid)); toast(`Connected as ${p.name}.`); } catch (_) {}
+      await refresh(); break;
+    }
+    case 'wizNext': wizStep = Math.min(3, wizStep + 1); render(); break;
+    case 'wizBack': wizStep = Math.max(0, wizStep - 1); render(); break;
+    case 'wizSkip': await hub.onboarding.finish(); await refresh(); go('dashboard'); break;
+    case 'wizFinish': await hub.onboarding.finish(); await refresh(); editing = null; go(t.dataset.to || 'dashboard'); break;
+    case 'runSetup': await hub.onboarding.restart(); await refresh(); wizStep = 0; go('welcome'); break;
     case 'disconnect': if (confirm('Disconnect this account? Scheduled posts to it will fail until you reconnect.')) { await run(() => hub.accounts.disconnect(pid)); await refresh(); } break;
     case 'deactivate': if (confirm('Deactivate Creator Hub on this computer? You will need your license key to activate again.')) await run(() => hub.license.deactivate()); break;
   }
@@ -427,4 +502,4 @@ document.addEventListener('change', async e => {
 
 hub.on('state-changed', () => refresh());
 hub.on('toast', m => toast(m));
-refresh().then(() => go('dashboard'));
+refresh().then(() => go(S.settings.onboarded ? 'dashboard' : 'welcome'));

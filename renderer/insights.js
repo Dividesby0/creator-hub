@@ -75,16 +75,24 @@ const Insights = (() => {
 
   // ---------- views ----------
   function connectCard(iv) {
+    const own = `<div class="grid g2"><label class="field"><span>OAuth Client ID (Desktop app)</span><input type="text" id="g-cid" value="${e(iv.clientId)}" placeholder="${iv.usingYouTubeClient ? 'using YouTube client' : ''}"></label>
+      <label class="field"><span>OAuth Client Secret</span><input type="password" id="g-cs" placeholder="${iv.hasClient && !iv.oneClick ? '•••••• saved' : ''}"></label></div>
+      <ol class="small muted" style="line-height:1.7">
+        <li>Google Cloud Console → APIs &amp; Services → <b>Enable</b>: YouTube Data API v3, YouTube Analytics API, Google Analytics Data API, Google Analytics Admin API, Google Search Console API, and the three Business Profile APIs.</li>
+        <li>Credentials → OAuth client ID → type <b>Desktop app</b>. Redirect is handled automatically (<code>http://127.0.0.1:8765/callback/</code>).</li>
+        <li>OAuth consent screen → add your Google account as a test user, or publish the app.</li></ol>`;
+    const status = iv.connected ? `<span class="small" style="color:var(--ok)">✓ Connected as ${e(iv.email)}</span><button class="btn danger sm" data-ins="disconnect">Disconnect</button>` : '';
+    if (iv.oneClick) {
+      return `<div class="card" style="margin-bottom:14px"><h2>Connect Google</h2>
+        <p class="muted">One sign-in unlocks <b>YouTube Analytics</b>, <b>Google Analytics</b> (your website), <b>Search Console</b> (how people find you on Google) and <b>Business Profile</b> (Maps &amp; Search). It's the same sign-in as YouTube posting, so if YouTube is connected you're already set. Read-only — Creator Hub never changes anything.</p>
+        <div class="row"><button class="btn primary" data-ins="connect">${iv.connected ? 'Reconnect Google' : 'Connect Google'}</button>${status}</div>
+        <details style="margin-top:12px"><summary class="muted small">Use my own Google developer keys (advanced)</summary><div style="margin-top:10px">${own}</div></details></div>`;
+    }
     return `<div class="card" style="margin-bottom:14px"><h2>Connect Google</h2>
-      <p class="muted">One sign-in unlocks <b>YouTube Analytics</b>, <b>Google Analytics 4</b> (your website), <b>Search Console</b> (how people find you on Google) and <b>Business Profile</b> (Maps &amp; Search listing). Read-only — Creator Hub never changes anything.</p>
-      ${iv.usingYouTubeClient ? '<div class="note info">Using the Google OAuth client from your YouTube connection. Enter a different one below only if you want to.</div>' : ''}
-      <div class="grid g2"><label class="field"><span>OAuth Client ID (Desktop app)</span><input type="text" id="g-cid" value="${e(iv.clientId)}" placeholder="${iv.usingYouTubeClient ? 'using YouTube client' : ''}"></label>
-      <label class="field"><span>OAuth Client Secret</span><input type="password" id="g-cs" placeholder="${iv.hasClient ? '•••••• saved' : ''}"></label></div>
-      <details style="margin-bottom:12px"><summary class="muted">Google Cloud setup (one time)</summary><ol class="small muted" style="line-height:1.7">
-        <li>Google Cloud Console → APIs &amp; Services → <b>Enable</b>: YouTube Data API v3, YouTube Analytics API, Google Analytics Data API, Google Analytics Admin API, Google Search Console API. For Business Profile also enable My Business Account Management, My Business Business Information and Business Profile Performance APIs (Google requires an access request for these).</li>
-        <li>Credentials → OAuth client ID → type <b>Desktop app</b>. Redirect handled automatically (<code>http://127.0.0.1:8765/callback/</code>).</li>
-        <li>OAuth consent screen → add your Google account as a test user, or publish the app.</li></ol></details>
-      <div class="row"><button class="btn primary" data-ins="connect">${iv.connected ? 'Reconnect Google' : 'Save & sign in with Google'}</button>${iv.connected ? `<span class="small" style="color:var(--ok)">Connected as ${e(iv.email)}</span><button class="btn danger sm" data-ins="disconnect">Disconnect</button>` : ''}</div></div>`;
+      <p class="muted">One sign-in unlocks <b>YouTube Analytics</b>, <b>Google Analytics 4</b>, <b>Search Console</b> and <b>Business Profile</b>. Read-only.</p>
+      ${iv.usingYouTubeClient ? '<div class="note info">Using the Google keys from your YouTube connection.</div>' : ''}
+      ${own}
+      <div class="row"><button class="btn primary" data-ins="connect">${iv.connected ? 'Reconnect Google' : 'Save & sign in with Google'}</button>${status}</div></div>`;
   }
 
   function pickers(iv) {
