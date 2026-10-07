@@ -10,17 +10,19 @@
   <nav id="nav">
     <div class="brand"><span class="dot"></span>Creator Hub</div>
     <button data-view="dashboard">Dashboard</button>
+    <button data-view="insights">Insights <span class="badge new">new</span></button>
     <button data-view="compose">Compose</button>
     <button data-view="queue">Queue</button>
     <button data-view="calendar">Calendar</button>
     <button data-view="approvals">Approvals <span class="badge" id="approvalBadge" hidden></span></button>
-    <button data-view="analytics">Analytics</button>
+    <button data-view="analytics">Post analytics</button>
     <button data-view="accounts">Accounts</button>
     <button data-view="settings">Settings</button>
     <div class="spacer"></div>
     <div class="status" id="navStatus"></div>
   </nav>
-  <main id="main"></main>
+  <div id="content"><div id="updateBanner" class="update-banner" hidden></div><main id="main"></main></div>
+  <script src="insights.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

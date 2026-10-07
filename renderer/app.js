@@ -35,7 +35,9 @@ async function refresh() {
   const b = $('#approvalBadge'); b.hidden = !pending; b.textContent = pending;
   const upcoming = S.posts.filter(p => p.status === 'approved').length;
   const connected = S.accounts.filter(a => a.connected).length;
-  $('#navStatus').innerHTML = `${connected}/6 accounts connected<br>${upcoming} post${upcoming === 1 ? '' : 's'} scheduled<br><span class="small">Posts only while this app is running.</span>`;
+  const ub = $('#updateBanner');
+  if (ub) { ub.hidden = !S.update; if (S.update) ub.innerHTML = `Creator Hub ${S.update.version} is available. <a data-url="${S.update.url}">Download</a> — installing it replaces this version automatically.`; }
+  $('#navStatus').innerHTML = `${connected}/6 accounts connected<br>${upcoming} post${upcoming === 1 ? '' : 's'} scheduled<br><span class="small">Posts only while this app is running.</span><br><span class="small">v${S.version || ''}</span>`;
   render();
 }
 
@@ -48,9 +50,9 @@ function go(v) {
 function render() {
   if (!S) return;
   const m = $('#main');
-  const fn = { dashboard, compose, queue, calendar, approvals, analytics, accounts, settings }[view];
-  // Don't clobber a half-typed compose form on background refreshes
-  if (view === 'compose' && m.dataset.view === 'compose' && document.activeElement && m.contains(document.activeElement)) return;
+  const fn = { dashboard, compose, queue, calendar, approvals, analytics, accounts, settings, insights: Insights.render }[view];
+  // Don't clobber a half-typed form on background refreshes
+  if ((view === 'compose' || view === 'insights') && m.dataset.view === view && document.activeElement && m.contains(document.activeElement) && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
   m.dataset.view = view;
   m.innerHTML = fn();
   (afterRender[view] || (() => {}))();
@@ -340,6 +342,8 @@ function settings() {
 
 // ================= Events =================
 document.addEventListener('click', async e => {
+  const ins = e.target.closest('[data-ins],[data-ins-tab],[data-ins-days]');
+  if (ins) return Insights.onClick(ins);
   const t = e.target.closest('[data-go],[data-action],[data-url],#nav button');
   if (!t) return;
   if (t.matches('#nav button')) { if (t.dataset.view === 'compose' && editing?.id) editing = null; return go(t.dataset.view); }
@@ -415,6 +419,7 @@ document.addEventListener('click', async e => {
 
 document.addEventListener('change', async e => {
   const t = e.target;
+  if (t.dataset.insSelect) return Insights.onChange(t);
   if (t.dataset.setting) { await run(() => hub.settings.update({ [t.dataset.setting]: t.checked })); await refresh(); }
   if (t.dataset.settingText) { await run(() => hub.settings.update({ [t.dataset.settingText]: t.value.trim() })); }
   if (t.dataset.settingNum) { const n = Math.max(1, Number(t.value) || 1); await run(() => hub.settings.update({ [t.dataset.settingNum]: n })); }

@@ -36,6 +36,18 @@ contextBridge.exposeInMainWorld('hub', {
   },
   settings: { update: patch => call('settings:update', patch) },
   analytics: { refresh: () => call('analytics:refresh') },
+  insights: {
+    saveConfig: cfg => call('insights:saveConfig', cfg),
+    connect: () => call('insights:connect'),
+    disconnect: () => call('insights:disconnect'),
+    resources: () => call('insights:resources'),
+    select: patch => call('insights:select', patch),
+    report: days => call('insights:report', days),
+    refresh: (days, force) => call('insights:refresh', days, force),
+    exportPdf: (html, name) => call('insights:exportPdf', html, name),
+    exportCsv: (csv, name) => call('insights:exportCsv', csv, name)
+  },
+  checkUpdate: () => call('app:checkUpdate'),
   on: (evt, fn) => {
     const ok = ['state-changed', 'toast'];
     if (!ok.includes(evt)) return;

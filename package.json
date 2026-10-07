@@ -1,7 +1,7 @@
 {
   "name": "creator-hub",
   "productName": "Creator Hub",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "description": "Local-first scheduler, approval queue, publisher and analytics for YouTube, TikTok, Instagram, Threads, Facebook and X.",
   "main": "main.js",
   "license": "UNLICENSED",
@@ -39,7 +39,11 @@
       "icon": "assets/icon.png",
       "identity": "-",
       "hardenedRuntime": false,
-      "gatekeeperAssess": false
+      "gatekeeperAssess": false,
+      "extendInfo": {
+        "NSDownloadsFolderUsageDescription": "Creator Hub removes older copies of itself and old installer files so only the current version stays installed.",
+        "NSDesktopFolderUsageDescription": "Creator Hub removes older copies of itself and old installer files so only the current version stays installed."
+      }
     },
     "win": {
       "target": [
@@ -49,7 +53,13 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "deleteAppDataOnUninstall": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Creator Hub",
+      "uninstallDisplayName": "Creator Hub"
     },
     "electronFuses": {
       "runAsNode": false,
@@ -61,5 +71,6 @@
     },
     "asar": true,
     "publish": null
-  }
+  },
+  "updateFeed": "https://api.github.com/repos/Dividesby0/creator-hub/releases/latest"
 }

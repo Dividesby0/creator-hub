@@ -7,10 +7,15 @@ const { Store } = require('./src/store');
 const { Engine } = require('./src/engine');
 const { LicenseManager } = require('./src/license/manager');
 const { deviceFingerprint } = require('./src/license/core');
+const { InsightsService } = require('./src/insights/service');
+const cleanupMod = require('./src/installer/cleanup');
+const { checkForUpdate } = require('./src/installer/updates');
+const os = require('os');
+const pkg = require('./package.json');
 
 if (!app.requestSingleInstanceLock()) { app.quit(); process.exit(0); }
 
-let win, tray, store, engine, license, quitting = false, blockerId = null;
+let win, tray, store, engine, license, insights, quitting = false, blockerId = null, updateInfo = null;
 
 // ---- at-rest encryption: OS keychain (macOS Keychain / Windows DPAPI) via safeStorage ----
 function makeBox() {
@@ -116,6 +121,9 @@ function handle(channel, fn, { licensed = true } = {}) {
 
 function state() {
   return {
+    version: pkg.version,
+    update: updateInfo,
+    insights: insights.view(),
     posts: store.listPosts(),
     accounts: engine.accountsView(),
     settings: store.data.settings,
@@ -180,19 +188,102 @@ function registerIpc() {
     return s;
   });
   handle('analytics:refresh', () => engine.refreshAnalytics());
+
+  // ---------- Insights ----------
+  handle('insights:saveConfig', cfg => insights.saveConfig(cfg));
+  handle('insights:connect', () => insights.connect());
+  handle('insights:disconnect', () => insights.disconnect());
+  handle('insights:resources', () => insights.refreshResources());
+  handle('insights:select', patch => insights.select(patch));
+  handle('insights:report', days => insights.report(days));
+  handle('insights:refresh', async (days, force) => { await engine.refreshAnalytics().catch(() => {}); return insights.refresh(days, { force }); });
+  handle('insights:exportPdf', async (html, suggested) => {
+    const r = await dialog.showSaveDialog(win, { defaultPath: path.join(app.getPath('documents'), suggested || 'Creator Hub report.pdf'), filters: [{ name: 'PDF', extensions: ['pdf'] }] });
+    if (r.canceled) return null;
+    const off = new BrowserWindow({ show: false, width: 1100, height: 1400, webPreferences: { sandbox: true, javascript: false } });
+    try {
+      await off.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
+      const pdf = await off.webContents.printToPDF({ printBackground: true, pageSize: 'Letter', margins: { marginType: 'default' } });
+      fs.writeFileSync(r.filePath, pdf);
+    } finally { off.destroy(); }
+    shell.showItemInFolder(r.filePath);
+    return r.filePath;
+  });
+  handle('insights:exportCsv', async (csv, suggested) => {
+    const r = await dialog.showSaveDialog(win, { defaultPath: path.join(app.getPath('documents'), suggested || 'Creator Hub data.csv'), filters: [{ name: 'CSV', extensions: ['csv'] }] });
+    if (r.canceled) return null;
+    fs.writeFileSync(r.filePath, csv);
+    shell.showItemInFolder(r.filePath);
+    return r.filePath;
+  });
+  handle('app:checkUpdate', () => runUpdateCheck());
 }
 
-app.whenReady().then(() => {
+// ---------- Installation hygiene: one copy only ----------
+// macOS: offer to move into /Applications on first run (replacing any older copy there),
+// then — once per new version — move every other Creator Hub copy and older installer files to the Trash.
+async function ensureSingleInstall() {
+  if (!app.isPackaged) return false;
+  if (process.platform === 'darwin' && !app.isInApplicationsFolder()) {
+    const { response } = await dialog.showMessageBox({
+      type: 'question', buttons: ['Move to Applications', 'Not now'], defaultId: 0, cancelId: 1,
+      message: 'Move Creator Hub to your Applications folder?',
+      detail: 'This keeps one copy of Creator Hub installed and replaces any older version. Your license, posts and settings are kept.'
+    });
+    if (response === 0) {
+      try { if (app.moveToApplicationsFolder({ conflictHandler: () => true })) return true; } // app relaunches from /Applications
+      catch (e) { dialog.showErrorBox('Could not move Creator Hub', e.message); }
+    }
+  }
+  return false;
+}
+
+async function cleanupOldCopies() {
+  if (!app.isPackaged) return;
+  const meta = store.data.install ||= { knownPaths: [], cleanedFor: null };
+  const current = process.platform === 'darwin' ? cleanupMod.appBundleOf(process.execPath) : path.dirname(process.execPath);
+  if (current && !meta.knownPaths.includes(current)) meta.knownPaths.push(current);
+  meta.knownPaths = meta.knownPaths.slice(-20);
+  if (meta.cleanedFor === pkg.version) { store.save(); return; }
+  const home = os.homedir();
+  const dirs = process.platform === 'darwin'
+    ? ['/Applications', path.join(home, 'Applications'), path.join(home, 'Downloads'), path.join(home, 'Desktop')]
+    : [path.join(home, 'Downloads'), path.join(home, 'Desktop')];
+  const knownPaths = process.platform === 'darwin' ? meta.knownPaths : [];
+  const { removed } = await cleanupMod.cleanup({
+    currentAppPath: process.platform === 'darwin' ? current : null,
+    currentVersion: pkg.version, dirs, knownPaths,
+    trash: p => shell.trashItem(p),
+    log: m => store.addLog('info', m)
+  });
+  meta.knownPaths = meta.knownPaths.filter(p => p === current || fs.existsSync(p));
+  meta.cleanedFor = pkg.version;
+  store.save();
+  if (removed.length) notify('toast', `Removed ${removed.length} old Creator Hub file${removed.length > 1 ? 's' : ''} (moved to Trash).`);
+}
+
+async function runUpdateCheck() {
+  updateInfo = await checkForUpdate({ feedUrl: pkg.updateFeed, currentVersion: pkg.version });
+  notify('changed');
+  return updateInfo;
+}
+
+app.whenReady().then(async () => {
+  if (await ensureSingleInstall()) return; // relaunching from /Applications
   const dir = app.getPath('userData');
   store = new Store(dir);
   const box = makeBox();
   license = new LicenseManager({ dir, box: fallback, legacyBox: box });
   engine = new Engine({ store, box, openExternal, notify });
+  insights = new InsightsService({ store, box, openExternal });
   store.onChange(() => notify('changed'));
   registerIpc();
   createWindow();
   createTray();
   app.on('activate', () => { win.show(); });
+  setTimeout(() => cleanupOldCopies().catch(e => store.addLog('warn', 'Cleanup: ' + e.message)), 4000);
+  setTimeout(() => runUpdateCheck(), 8000);
+  setInterval(() => runUpdateCheck(), 6 * 3600e3);
 });
 
 app.on('second-instance', () => { if (win) { win.show(); win.focus(); } });

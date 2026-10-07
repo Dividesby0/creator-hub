@@ -5,7 +5,9 @@ A local-first desktop app for macOS and Windows. It schedules, approves, publish
 - **Compose once, post everywhere.** Captions can be overridden per platform, with live character-limit and X-cost counters.
 - **Approval queue.** Nothing goes live until you approve it (you can turn this off).
 - **Calendar, queue, and retries.** Each platform retries on its own, so a failure on X never re-posts to TikTok.
-- **Analytics.** Follower history and per-post views, likes, comments, and shares from each platform's API.
+- **Insights (v2).** One dashboard for everything: YouTube Analytics (views, watch hours, subscribers, top videos, traffic sources), Google Analytics 4 (website visitors, top pages, channels), Search Console (Google clicks, impressions, top queries, SEO opportunities), Google Business Profile (profile views, calls, website clicks, directions) and every connected social platform, each compared with the previous period. Auto-generated "What changed" highlights, 7/28/90-day ranges, one-click **PDF report** and **CSV export**.
+- **Post analytics.** Follower history and per-post views, likes, comments, and shares from each platform's API.
+- **One copy, always.** On Mac it offers to move itself into Applications, and after each update it moves older copies and old installer files to the Trash. On Windows the installer upgrades in place. The app tells you when a new version is out.
 - **Batch import.** Load a week of posts from one JSON file (see `examples/batch-week-1.json`).
 - **AI-content labels.** One checkbox sets YouTube's synthetic-media flag and TikTok's AIGC flag, and can append a disclosure hashtag.
 - **Private by design.** Credentials are encrypted with the OS keychain (macOS Keychain or Windows DPAPI) and never leave the computer except to talk to each platform.
@@ -93,6 +95,12 @@ Portals rename menus often. If a label below doesn't match, look for the nearest
 3. In Creator Hub, paste the Client ID, then click **Save & sign in**. X analytics reads also cost money, so they are **off by default** (Settings → Fetch X analytics).
 
 ---
+
+### Google Insights (YouTube Analytics, GA4, Search Console, Business Profile)
+1. In the same Google Cloud project as YouTube, enable: **YouTube Analytics API**, **Google Analytics Data API**, **Google Analytics Admin API**, **Google Search Console API**. For Business Profile also enable **My Business Account Management**, **My Business Business Information** and **Business Profile Performance** APIs. Google requires an access request before these three work.
+2. Open **Insights** → **Save & sign in with Google**. It reuses your YouTube OAuth client automatically. Approve every permission (all read-only).
+3. Pick your GA4 property, Search Console site and Business Profile location under **Data sources**. If you only have one of each, it's picked automatically.
+4. Anything not set up just shows a short note on its tab; the other tabs keep working.
 
 ## 3. Weekly workflow (with Claude)
 

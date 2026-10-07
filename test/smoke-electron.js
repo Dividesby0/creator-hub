@@ -24,6 +24,41 @@ fs.writeFileSync(path.join(userData, 'creator-hub-data.json'), JSON.stringify({
   settings: { requireApproval: true, keepRunningInBackground: false }
 }));
 
+// ---- seed v2 Insights cache with realistic sample data ----
+{
+  const { rangeFor, compare } = require('../src/insights/ranges');
+  const r = rangeFor(28);
+  const file = path.join(userData, 'creator-hub-data.json');
+  const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const days = []; for (let i = 0; i < 28; i++) days.push(new Date(Date.parse(r.start) + i * 864e5).toISOString().slice(0, 10));
+  const wave = (b, a, i, k = 1) => Math.round(b + a * Math.sin(i / 3.2 * k) + i * b * 0.02);
+  const fakeSecret = null; // not connected via OAuth in the smoke test; cache is shown directly
+  data.analytics.account = {
+    tiktok: [{ at: new Date(Date.parse(r.prevEnd)).toISOString(), followers: 1240 }, { at: new Date().toISOString(), followers: 1810 }],
+    instagram: [{ at: new Date(Date.parse(r.prevEnd)).toISOString(), followers: 640 }, { at: new Date().toISOString(), followers: 702 }],
+    x: [{ at: new Date(Date.parse(r.prevEnd)).toISOString(), followers: 310 }, { at: new Date().toISOString(), followers: 298 }]
+  };
+  data.insights = { config: {}, secretConfig: '', secret: '', selections: { ga4Property: '1', gscSite: 'sc-domain:decrypt443.com', gbpLocation: 'locations/1' },
+    resources: { youtube: { id: 'UC1', name: 'Decrypt443', subscribers: 2140 }, ga4: [{ id: '1', name: 'decrypt443.com (Decrypt443)' }], gsc: [{ id: 'sc-domain:decrypt443.com', name: 'Domain: decrypt443.com' }], gbp: [{ id: 'locations/1', name: 'Decrypt443 Studio' }], errors: {} },
+    lastError: null,
+    cache: { '28': { range: r, fetchedAt: new Date().toISOString(), google: { range: r, resources: { youtube: { subscribers: 2140 } }, sources: {
+      youtube: { ok: true, totals: compare({ views: 48210, watchHours: 1932.4, avgViewDuration: 214, netSubscribers: 386, likes: 2140, comments: 388, shares: 291, engagementRate: 0.0585 }, { views: 31950, watchHours: 1310, avgViewDuration: 198, netSubscribers: 210, likes: 1500, comments: 260, shares: 180, engagementRate: 0.061 }),
+        series: days.map((d, i) => ({ date: d, views: wave(1500, 500, i), watchHours: wave(60, 20, i, 1.3), subscribers: wave(12, 6, i) })),
+        topVideos: [['That call from “mom” was AI', 12840, 512, 61], ['Remove yourself from data brokers tonight', 8410, 301, 54], ['Prompt injection explained in 60s', 6120, 188, 72], ['Is your trading bot leaking keys?', 4380, 160, 48]].map(([title, views, w, p], i) => ({ id: 'v' + i, title, views, watchHours: w, avgViewPct: p, likes: Math.round(views * 0.045), subscribers: Math.round(views / 80), url: 'https://youtube.com' })),
+        trafficSources: [['Shorts feed', 19800], ['YouTube search', 12100], ['Suggested videos', 8900], ['Browse / Home', 5100], ['External sites', 2310]].map(([source, views]) => ({ source, views })) },
+      ga4: { ok: true, totals: compare({ activeUsers: 6120, newUsers: 5290, sessions: 8410, screenPageViews: 15230, engagementRate: 0.62, averageSessionDuration: 96 }, { activeUsers: 4980, newUsers: 4400, sessions: 6900, screenPageViews: 12100, engagementRate: 0.58, averageSessionDuration: 88 }),
+        series: days.map((d, i) => ({ date: d, users: wave(210, 60, i), sessions: wave(290, 80, i), views: wave(540, 140, i) })),
+        topPages: [['/ai-voice-clone-scams', 3120, 2210], ['/data-broker-opt-out', 2410, 1880], ['/', 1980, 1500]].map(([page, views, users]) => ({ page, views, users })),
+        channels: [['Organic Social', 3400], ['Organic Search', 2810], ['Direct', 1500], ['Referral', 700]].map(([channel, sessions]) => ({ channel, sessions })) },
+      gsc: { ok: true, totals: compare({ clicks: 1420, impressions: 61200, ctr: 0.0232, position: 14.6 }, { clicks: 980, impressions: 44100, ctr: 0.0222, position: 17.9 }),
+        series: days.map((d, i) => ({ date: d, clicks: wave(50, 15, i), impressions: wave(2200, 500, i), position: 14 })),
+        topQueries: [['ai voice clone scam', 210, 9800, 0.021, 6.4], ['how to opt out of data brokers', 180, 7200, 0.025, 8.1], ['prompt injection example', 95, 4100, 0.023, 11.2]].map(([query, clicks, impressions, ctr, position]) => ({ query, clicks, impressions, ctr, position })),
+        topPages: [['https://decrypt443.com/ai-voice-clone-scams', 520, 21000]].map(([page, clicks, impressions]) => ({ page, clicks, impressions })) },
+      gbp: { ok: false, error: 'Business Profile API access not approved yet (Google requires an access request), or this Google account manages no business locations.' }
+    } } } } };
+  fs.writeFileSync(file, JSON.stringify(data));
+}
+
 require('../main.js');
 
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -50,10 +85,25 @@ app.whenReady().then(async () => {
   await wait(2500);
   const errs = [];
   win.webContents.on('console-message', (_e, level, msg) => { if (level >= 2) errs.push(msg); });
-  for (const v of ['dashboard', 'compose', 'queue', 'calendar', 'approvals', 'analytics', 'accounts', 'settings']) {
+  for (const v of ['insights', 'dashboard', 'compose', 'queue', 'calendar', 'approvals', 'analytics', 'accounts', 'settings']) {
     await js(`document.querySelector('#nav button[data-view="${v}"]').click()`);
     await shot(win, 'view-' + v);
   }
+  // Insights tabs
+  await js(`document.querySelector('#nav button[data-view="insights"]').click()`);
+  for (const t of ['youtube', 'website', 'search', 'business', 'social']) {
+    await js(`document.querySelector('[data-ins-tab="${t}"]').click()`);
+    await shot(win, 'insights-' + t);
+  }
+  // PDF + CSV report generation
+  await js(`document.querySelector('[data-ins-tab="overview"]').click()`);
+  const html = await js(`Insights._test.pdf()`);
+  const csvText = await js(`Insights._test.csv()`);
+  fs.writeFileSync(path.join(outDir, 'report.csv'), csvText);
+  const off = new BrowserWindow({ show: false, width: 1100, height: 1400, webPreferences: { sandbox: true, javascript: false } });
+  await off.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
+  fs.writeFileSync(path.join(outDir, 'report.pdf'), await off.webContents.printToPDF({ printBackground: true, pageSize: 'Letter' }));
+  off.destroy();
   // compose interactions: toggle platforms and type an over-length caption for X
   await js(`document.querySelector('#nav button[data-view="compose"]').click()`);
   await wait(300);
