@@ -26,8 +26,9 @@ jobs:
         env:
           G_SECRET: ${{ secrets.CH_GOOGLE_CLIENT_SECRET }}
         run: |
+          export G_SECRET="$(printf '%s' "$G_SECRET" | tr -d '[:space:]')"
           node -e "require('fs').writeFileSync('src/oauth/builtin.json', JSON.stringify({ google: { clientSecret: process.env.G_SECRET || '' } }))"
-          node -e "const b=require('./src/oauth/builtin');if(!b.builtin('google')){console.error('Missing the CH_GOOGLE_CLIENT_SECRET repository secret: refusing to ship a build without one-click Google sign-in.');process.exit(1)}console.log('built-in Google sign-in: yes')"
+          node -e "const b=require('./src/oauth/builtin');if(!/^GOCSPX-[A-Za-z0-9_-]{20,}$/.test((process.env.G_SECRET||'').trim())){console.error('CH_GOOGLE_CLIENT_SECRET does not look like a Google OAuth client secret (GOCSPX-...). Refusing to build.');process.exit(1)}if(!b.builtin('google')){console.error('Missing the CH_GOOGLE_CLIENT_SECRET repository secret: refusing to ship a build without one-click Google sign-in.');process.exit(1)}console.log('built-in Google sign-in: yes')"
       - name: Build (Mac)
         if: runner.os == 'macOS'
         # Ad-hoc signed (package.json mac.identity "-") until you add an Apple Developer ID.
