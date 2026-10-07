@@ -52,7 +52,7 @@ const fallback = (() => {
 })();
 
 function openExternal(url) {
-  if (/^https:\/\//i.test(url)) shell.openExternal(url);
+  if (/^(https:\/\/|mailto:)/i.test(url)) shell.openExternal(url);
 }
 
 function notify(evt, data) {
@@ -122,6 +122,7 @@ function handle(channel, fn, { licensed = true } = {}) {
 function state() {
   return {
     version: pkg.version,
+    brand: require('./src/brand.json'),
     update: updateInfo,
     insights: insights.view(),
     posts: store.listPosts(),

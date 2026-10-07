@@ -465,6 +465,9 @@ function settings() {
         <tr><td class="muted">This device</td><td><code>${esc(L.device)}</code></td></tr></table>
         <div class="row" style="margin-top:12px"><button class="btn danger" data-action="deactivate">Deactivate this device</button></div>
         <div class="muted small" style="margin-top:6px">Deactivating frees this seat so you can move your license to another computer.</div>` : ''}
+      <h2 style="margin-top:18px">About</h2>
+      <div class="muted small" style="line-height:1.9">${esc(S.brand?.name || 'Creator Hub')} ${esc(S.version)} by ${esc(S.brand?.publisher || '')}<br>
+        <a data-url="${esc(S.brand?.siteUrl || '')}">Website</a> &nbsp; <a data-url="${esc(S.brand?.privacyUrl || '')}">Privacy policy</a> &nbsp; <a data-url="${esc(S.brand?.termsUrl || '')}">Terms</a> &nbsp; <a data-url="mailto:${esc(S.brand?.supportEmail || '')}">Contact support</a></div>
       <h2 style="margin-top:18px">Activity log</h2>
       <div class="log">${S.log.map(l => `<div class="${l.level}"><span class="muted">${fmtDate(l.at)}</span> ${esc(l.message)}</div>`).join('') || '<div class="muted">No activity yet.</div>'}</div>
     </div>
