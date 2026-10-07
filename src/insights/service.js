@@ -157,7 +157,7 @@ class InsightsService {
     const out = [];
     const pct = d => `${d >= 0 ? '+' : ''}${Math.round(d * 100)}%`;
     const yt = src.youtube?.ok ? src.youtube : null;
-    if (yt?.topVideos?.[0]) out.push({ tone: 'good', text: `Top video: “${yt.topVideos[0].title}” — ${Math.round(yt.topVideos[0].views).toLocaleString()} views this period.` });
+    if (yt?.topVideos?.[0]) out.push({ tone: 'good', text: `Top video: “${yt.topVideos[0].title}”: ${Math.round(yt.topVideos[0].views).toLocaleString()} views this period.` });
     if (yt?.trafficSources?.[0]) {
       const total = yt.trafficSources.reduce((t, s) => t + s.views, 0) || 1;
       out.push({ tone: 'info', text: `${Math.round(yt.trafficSources[0].views / total * 100)}% of YouTube views came from ${yt.trafficSources[0].source}.` });
@@ -165,11 +165,11 @@ class InsightsService {
     const vd = yt?.totals?.views?.delta;
     if (vd != null && Math.abs(vd) >= 0.1) out.push({ tone: vd > 0 ? 'good' : 'warn', text: `YouTube views ${pct(vd)} vs. the previous period.` });
     const sub = yt?.totals?.netSubscribers;
-    if (sub && sub.value < 0) out.push({ tone: 'warn', text: `You lost ${Math.abs(sub.value)} subscribers net — check recent uploads for drop-off.` });
+    if (sub && sub.value < 0) out.push({ tone: 'warn', text: `You lost ${Math.abs(sub.value)} subscribers net. Check recent uploads for drop-off.` });
     const gsc = src.gsc?.ok ? src.gsc : null;
     if (gsc) {
       const opp = (gsc.topQueries || []).filter(q => q.impressions > 50 && q.position > 3 && q.position <= 15).sort((a, b) => b.impressions - a.impressions)[0];
-      if (opp) out.push({ tone: 'info', text: `SEO opportunity: “${opp.query}” gets ${Math.round(opp.impressions)} impressions at position ${opp.position.toFixed(1)} — a better title or page could move it to the top 3.` });
+      if (opp) out.push({ tone: 'info', text: `SEO opportunity: “${opp.query}” gets ${Math.round(opp.impressions)} impressions at position ${opp.position.toFixed(1)}. A better title or page could move it to the top 3.` });
     }
     const ga = src.ga4?.ok ? src.ga4 : null;
     if (ga?.channels?.[0]) out.push({ tone: 'info', text: `Most website sessions come from ${ga.channels[0].channel}.` });

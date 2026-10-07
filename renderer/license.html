@@ -2,12 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'none'">
   <title>Activate Creator Hub</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="ui.js"></script>
 </head>
-<body>
-  <main style="max-width:760px;margin:0 auto">
+<body class="fx-on">
+  <canvas id="bgfx"></canvas>
+  <main style="max-width:760px;margin:0 auto;position:relative;z-index:1">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><span id="licMark"></span><span style="font-family:var(--display);font-size:22px;font-weight:700;letter-spacing:-0.02em">Creator Hub</span></div>
     <div class="header"><div><h1>Activate Creator Hub</h1><div class="muted">Enter your license key to get started.</div></div></div>
     <div id="err"></div>
     <div class="card" style="margin-bottom:14px">
@@ -35,6 +38,7 @@
       <div class="muted small" style="margin-top:14px">This device: <code id="device"></code></div>
     </div>
   </main>
+  <script src="fx.js"></script>
   <script src="license.js"></script>
 </body>
 </html>

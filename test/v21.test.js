@@ -20,7 +20,8 @@ const BUILTIN = { google: { clientId: 'builtin-id.apps.googleusercontent.com', c
 const approve = url => {
   const u = new URL(url);
   const state = u.searchParams.get('state');
-  setTimeout(() => http.get(`http://127.0.0.1:8765/callback/?code=CODE1&state=${state}`, { agent: false }, r => r.resume()), 20);
+  const cb = u.searchParams.get('redirect_uri');
+  setTimeout(() => http.get(`${cb}?code=CODE1&state=${state}`, { agent: false }, r => r.resume()), 20);
 };
 
 function mockGoogle(record) {
@@ -127,4 +128,68 @@ test('built-in client ID is in code; CI only injects the secret', () => {
     assert.match(g.clientId, /^563271142019-.*\.apps\.googleusercontent\.com$/);
     assert.strictEqual(g.clientSecret, 'S');
   } finally { had ? fs2.writeFileSync(f, had) : fs2.rmSync(f, { force: true }); builtinMod._reset(null); }
+});
+
+test('a second Connect click cancels the first sign-in instead of failing with "port in use"', async () => {
+  const { loopbackSignIn } = require('../src/util');
+  const first = loopbackSignIn({ port: 8765, state: 'a', buildUrl: r => r, openExternal: () => {} });
+  await new Promise(r => setTimeout(r, 30));
+  let opened = '';
+  const second = loopbackSignIn({ port: 8765, state: 'b', buildUrl: r => r, openExternal: u => { opened = u; } });
+  await assert.rejects(first, /restarted/);
+  await new Promise(r => setTimeout(r, 50));
+  assert.strictEqual(opened, 'http://127.0.0.1:8765/callback/');
+  http.get(`${opened}?code=C2&state=b`, { agent: false }, r => r.resume());
+  assert.deepStrictEqual(await second, { code: 'C2', redirectUri: 'http://127.0.0.1:8765/callback/' });
+});
+
+test('Google sign-in uses any free loopback port and sends the same redirect to the token exchange', async () => {
+  builtinMod._reset(BUILTIN);
+  const calls = [];
+  mockGoogle(calls);
+  let authUrl = '';
+  const engine = new Engine({ store: new Store(tmp()), box, openExternal: u => { authUrl = u; approve(u); } });
+  await engine.connect('youtube');
+  const redirect = new URL(authUrl).searchParams.get('redirect_uri');
+  assert.match(redirect, /^http:\/\/127\.0\.0\.1:\d+\/callback\/$/);
+  assert.ok(calls.find(c => c.url.includes('/token')).body.includes('redirect_uri=' + encodeURIComponent(redirect)));
+  builtinMod._reset(null);
+});
+
+test('one-click for other platforms turns on only when the app ID (and relay, if needed) is set', () => {
+  const oc = require('../src/oauth/oneclick');
+  builtinMod._reset(null, {});
+  for (const p of ['x', 'tiktok', 'instagram', 'threads', 'facebook']) assert.strictEqual(oc.available(p), false, p);
+  builtinMod._reset(null, { x: { clientId: 'X1' }, tiktok: { clientKey: 'T1' } });
+  assert.strictEqual(oc.available('x'), true, 'X is a public PKCE client: no relay needed');
+  assert.strictEqual(oc.available('tiktok'), false, 'TikTok needs the relay for its secret');
+  builtinMod._reset(null, { tiktok: { clientKey: 'T1' }, relay: { url: 'https://relay.example' } });
+  assert.strictEqual(oc.available('tiktok'), true);
+  const engine = new Engine({ store: new Store(tmp()), box, openExternal: () => {} });
+  assert.strictEqual(engine.accountsView().find(a => a.id === 'tiktok').oneClick, true);
+  builtinMod._reset(null, null);
+});
+
+test('TikTok one-click: relay redirect carries the local port in state; tokens come back via the relay', async () => {
+  builtinMod._reset(null, { tiktok: { clientKey: 'T1' }, relay: { url: 'https://relay.example' } });
+  const calls = [];
+  global.fetch = async (url, opts = {}) => {
+    calls.push({ url: String(url), body: String(opts.body || '') });
+    if (String(url).includes('/v1/oauth/token/tiktok')) return Response.json({ access_token: 'AT', refresh_token: 'RT', expires_in: 86400 });
+    if (String(url).includes('/user/info/')) return Response.json({ data: { user: { display_name: 'decrypt443', open_id: 'O1' } } });
+    throw new Error('unmocked ' + url);
+  };
+  const engine = new Engine({ store: new Store(tmp()), box, openExternal: url => {
+    const u = new URL(url);
+    assert.strictEqual(u.searchParams.get('redirect_uri'), 'https://relay.example/v1/oauth/cb/tiktok');
+    assert.strictEqual(u.searchParams.get('client_key'), 'T1');
+    const state = u.searchParams.get('state');
+    const port = state.split('.')[0];
+    // what the relay does: bounce to this computer
+    setTimeout(() => http.get(`http://127.0.0.1:${port}/callback/?code=C9&state=${state}`, { agent: false }, r => r.resume()), 20);
+  } });
+  const profile = await engine.connect('tiktok');
+  assert.strictEqual(profile.name, 'decrypt443');
+  assert.deepStrictEqual(JSON.parse(calls[0].body), { grant_type: 'authorization_code', code: 'C9', redirect_uri: 'https://relay.example/v1/oauth/cb/tiktok' });
+  builtinMod._reset(null, null);
 });

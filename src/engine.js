@@ -1,6 +1,6 @@
 'use strict';
 // Engine: account connections, scheduled publishing with retries, analytics refresh.
-// Pure Node — Electron specifics (encryption, opening the browser) are injected.
+// Pure Node - Electron specifics (encryption, opening the browser) are injected.
 const fs = require('fs');
 const platforms = require('./platforms');
 
@@ -176,7 +176,7 @@ class Engine {
       if (status === 'retrying') patch.scheduledAt = new Date(Date.now() + 10 * 60e3).toISOString(); // retry in 10 min
       this.store.updatePost(id, patch);
       if (status === 'published') this.notify('toast', `Published "${post.title || post.caption.slice(0, 40)}"`);
-      if (status === 'failed' || status === 'partial_failed') this.notify('toast', `Some platforms failed for "${post.title || post.caption.slice(0, 40)}" — see Queue.`);
+      if (status === 'failed' || status === 'partial_failed') this.notify('toast', `Some platforms failed for "${post.title || post.caption.slice(0, 40)}". See Queue for details.`);
     } finally {
       this.busy.delete(id);
       this.notify('changed');

@@ -1,14 +1,14 @@
 'use strict';
-/* Creator Hub — Insights: all-in-one metrics & reporting. Loaded before app.js; uses its globals at call time. */
+/* Creator Hub - Insights: all-in-one metrics & reporting. Loaded before app.js; uses its globals at call time. */
 const Insights = (() => {
   let days = 28, tab = 'overview', report = null, loading = false, error = null;
   const COLORS = { a: '#5b8cff', b: '#2fbf71', c: '#f0a830', d: '#e1306c', muted: '#9aa3b2' };
   const e = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   // ---------- formatting ----------
-  const num = (v, d = 0) => v == null || isNaN(v) ? '—' : Number(v).toLocaleString(undefined, { maximumFractionDigits: d, minimumFractionDigits: d });
-  const compact = v => v == null || isNaN(v) ? '—' : Math.abs(v) >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : Math.abs(v) >= 1e4 ? (v / 1e3).toFixed(1) + 'K' : num(v);
-  const pctv = v => v == null || isNaN(v) ? '—' : (v * 100).toFixed(1) + '%';
+  const num = (v, d = 0) => v == null || isNaN(v) ? '-' : Number(v).toLocaleString(undefined, { maximumFractionDigits: d, minimumFractionDigits: d });
+  const compact = v => v == null || isNaN(v) ? '-' : Math.abs(v) >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : Math.abs(v) >= 1e4 ? (v / 1e3).toFixed(1) + 'K' : num(v);
+  const pctv = v => v == null || isNaN(v) ? '-' : (v * 100).toFixed(1) + '%';
   const dur = s => { s = Math.round(s || 0); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
   const FMT = {
     views: compact, watchHours: v => num(v, 1), avgViewDuration: dur, netSubscribers: v => (v > 0 ? '+' : '') + num(v), likes: compact, comments: compact, shares: compact,
@@ -84,7 +84,7 @@ const Insights = (() => {
     const status = iv.connected ? `<span class="small" style="color:var(--ok)">✓ Connected as ${e(iv.email)}</span><button class="btn danger sm" data-ins="disconnect">Disconnect</button>` : '';
     if (iv.oneClick) {
       return `<div class="card" style="margin-bottom:14px"><h2>Connect Google</h2>
-        <p class="muted">One sign-in unlocks <b>YouTube Analytics</b>, <b>Google Analytics</b> (your website), <b>Search Console</b> (how people find you on Google) and <b>Business Profile</b> (Maps &amp; Search). It's the same sign-in as YouTube posting, so if YouTube is connected you're already set. Read-only — Creator Hub never changes anything.</p>
+        <p class="muted">One sign-in unlocks <b>YouTube Analytics</b>, <b>Google Analytics</b> (your website), <b>Search Console</b> (how people find you on Google) and <b>Business Profile</b> (Maps &amp; Search). It's the same sign-in as YouTube posting, so if YouTube is connected you're already set. Read-only: Creator Hub never changes anything.</p>
         <div class="row"><button class="btn primary" data-ins="connect">${iv.connected ? 'Reconnect Google' : 'Connect Google'}</button>${status}</div>
         <details style="margin-top:12px"><summary class="muted small">Use my own Google developer keys (advanced)</summary><div style="margin-top:10px">${own}</div></details></div>`;
     }
@@ -98,7 +98,7 @@ const Insights = (() => {
   function pickers(iv) {
     const r = iv.resources || { ga4: [], gsc: [], gbp: [], errors: {} };
     const sel = (key, list, label, err) => `<label class="field"><span>${label}</span>${list?.length
-      ? `<select data-ins-select="${key}"><option value="">— not used —</option>${list.map(o => `<option value="${e(o.id)}" ${iv.selections[key] === o.id ? 'selected' : ''}>${e(o.name)}</option>`).join('')}</select>`
+      ? `<select data-ins-select="${key}"><option value="">Not used</option>${list.map(o => `<option value="${e(o.id)}" ${iv.selections[key] === o.id ? 'selected' : ''}>${e(o.name)}</option>`).join('')}</select>`
       : `<div class="small muted" style="padding:9px 0">${e(err || 'None found for this Google account.')}</div>`}</label>`;
     return `<div class="card" style="margin-bottom:14px"><div class="row" style="justify-content:space-between"><h3 style="margin:0">Data sources</h3><div class="row"><span class="small muted">${r.youtube ? 'YouTube: ' + e(r.youtube.name) : e(r.errors?.youtube || '')}</span><button class="btn sm" data-ins="resources">Re-scan</button></div></div>
       <div class="grid g3" style="margin-top:10px">${sel('ga4Property', r.ga4, 'Google Analytics 4 property', r.errors?.ga4)}${sel('gscSite', r.gsc, 'Search Console site', r.errors?.gsc)}${sel('gbpLocation', r.gbp, 'Business Profile location', r.errors?.gbp)}</div></div>`;

@@ -25,8 +25,11 @@ module.exports = {
   ],
   postOptions: [],
 
+  oneClick: () => require('../oauth/oneclick').available('threads'),
+
   async connect(ctx) {
     const token = ctx.account.config.accessToken;
+    if (!token && require('../oauth/oneclick').available('threads')) return require('../oauth/flows').threads(ctx);
     if (!token) throw new Error('Paste a long-lived Threads access token first.');
     const { body } = await request('Threads', `${B}/me?fields=id,username&access_token=${enc(token)}`);
     return { secret: { accessToken: token, refreshedAt: Date.now() }, profile: { name: '@' + body.username, id: body.id } };

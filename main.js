@@ -101,7 +101,7 @@ function createTray() {
   try {
     const img = nativeImage.createFromPath(iconPath()).resize({ width: 18, height: 18 });
     tray = new Tray(img);
-    tray.setToolTip('Creator Hub — scheduler running');
+    tray.setToolTip('Creator Hub: scheduler running');
     tray.setContextMenu(Menu.buildFromTemplate([
       { label: 'Open Creator Hub', click: () => { win.show(); win.focus(); } },
       { type: 'separator' },
@@ -230,7 +230,7 @@ function registerIpc() {
 
 // ---------- Installation hygiene: one copy only ----------
 // macOS: offer to move into /Applications on first run (replacing any older copy there),
-// then — once per new version — move every other Creator Hub copy and older installer files to the Trash.
+// then - once per new version - move every other Creator Hub copy and older installer files to the Trash.
 async function ensureSingleInstall() {
   if (!app.isPackaged) return false;
   if (process.platform === 'darwin' && !app.isInApplicationsFolder()) {

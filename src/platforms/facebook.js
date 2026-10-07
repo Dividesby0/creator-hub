@@ -1,5 +1,5 @@
 'use strict';
-// Facebook Page — Graph API with a Page access token. Videos and photos upload directly from disk.
+// Facebook Page - Graph API with a Page access token. Videos and photos upload directly from disk.
 const { request, toForm, fileInfo, readChunk, captionFor } = require('../util');
 
 const VERSION = 'v23.0';
@@ -25,15 +25,18 @@ module.exports = {
     { key: 'link', label: 'Link (text posts)', type: 'text' }
   ],
 
+  oneClick: () => require('../oauth/oneclick').available('facebook'),
+
   async connect(ctx) {
     const { pageId, accessToken } = ctx.account.config;
+    if (!accessToken && require('../oauth/oneclick').available('facebook')) return require('../oauth/flows').facebook(ctx);
     if (!pageId || !accessToken) throw new Error('Enter the Page ID and a Page access token first.');
     const { body } = await request('Facebook', `${G}/${pageId}?fields=name&access_token=${encodeURIComponent(accessToken)}`);
     return { secret: { accessToken }, profile: { name: body.name, id: pageId } };
   },
 
   async publish(post, ctx) {
-    const { pageId } = ctx.account.config;
+    const pageId = ctx.account.config.pageId || ctx.account.profile?.id;
     const token = ctx.account.secret.accessToken;
     const text = captionFor(post, 'facebook', ctx.settings, 63206);
     const o = post.overrides?.facebook || {};
@@ -65,7 +68,7 @@ module.exports = {
   },
 
   async fetchAccountStats(ctx) {
-    const { pageId } = ctx.account.config;
+    const pageId = ctx.account.config.pageId || ctx.account.profile?.id;
     const { body } = await request('Facebook', `${G}/${pageId}?fields=followers_count,fan_count&access_token=${encodeURIComponent(ctx.account.secret.accessToken)}`);
     return { followers: body.followers_count ?? body.fan_count ?? 0 };
   },

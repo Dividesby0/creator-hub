@@ -1,5 +1,5 @@
 'use strict';
-// Instagram — Instagram API with Instagram Login (graph.instagram.com) or via Facebook Login (graph.facebook.com).
+// Instagram - Instagram API with Instagram Login (graph.instagram.com) or via Facebook Login (graph.facebook.com).
 // Reels are uploaded straight from disk (resumable upload). Single images need a public URL (Meta fetches them).
 const { request, toForm, fileInfo, readChunk, captionFor, sleep, ApiError } = require('../util');
 
@@ -34,8 +34,11 @@ module.exports = {
   ],
   postOptions: [],
 
+  oneClick: () => require('../oauth/oneclick').available('instagram'),
+
   async connect(ctx) {
     const token = ctx.account.config.accessToken;
+    if (!token && require('../oauth/oneclick').available('instagram')) return require('../oauth/flows').instagram(ctx);
     if (!token) throw new Error('Paste a long-lived access token first.');
     const fields = (ctx.account.config.apiHost || 'graph.instagram.com') === 'graph.instagram.com' ? 'user_id,username' : 'id,username';
     const id = ctx.account.config.userId || 'me';

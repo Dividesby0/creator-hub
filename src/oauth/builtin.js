@@ -27,6 +27,18 @@ function builtin(provider) {
   return c && c.clientId && c.clientSecret ? { clientId: c.clientId, clientSecret: c.clientSecret } : null;
 }
 
+// Public app IDs for one-click sign-in on other platforms (src/oauth/apps.json, committed).
+let appsCache = null;
+function apps() {
+  if (appsCache) return appsCache;
+  try { appsCache = JSON.parse(fs.readFileSync(path.join(__dirname, 'apps.json'), 'utf8')); } catch (_) { appsCache = {}; }
+  const env = { x: ['clientId', 'CH_X_CLIENT_ID'], tiktok: ['clientKey', 'CH_TIKTOK_CLIENT_KEY'], instagram: ['appId', 'CH_INSTAGRAM_APP_ID'],
+    threads: ['appId', 'CH_THREADS_APP_ID'], facebook: ['appId', 'CH_FACEBOOK_APP_ID'], relay: ['url', 'CH_RELAY_URL'] };
+  for (const [k, [field, name]] of Object.entries(env)) if (process.env[name]) appsCache[k] = { ...(appsCache[k] || {}), [field]: process.env[name] };
+  return appsCache;
+}
+const appValue = (provider, field) => String(apps()[provider]?.[field] || '').trim();
+
 const hasOwn = cfg => !!(cfg && cfg.clientId && cfg.clientSecret);
 
 /**
@@ -39,6 +51,6 @@ function googleClient({ own, alt, tokenClientId } = {}) {
   return candidates[0] || null;
 }
 
-function _reset(next) { cache = next || null; } // tests
+function _reset(next, nextApps) { cache = next || null; appsCache = nextApps || null; } // tests
 
-module.exports = { builtin, googleClient, hasOwn, _reset };
+module.exports = { builtin, googleClient, hasOwn, apps, appValue, _reset };

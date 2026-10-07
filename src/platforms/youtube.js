@@ -1,6 +1,6 @@
 'use strict';
-// YouTube Data API v3 — OAuth (installed app, loopback + PKCE), resumable upload, stats.
-const { request, toForm, randomVerifier, challengeBase64Url, waitForAuthCode, REDIRECT_URI,
+// YouTube Data API v3 - OAuth (installed app, loopback + PKCE), resumable upload, stats.
+const { request, toForm, randomVerifier, challengeBase64Url, loopbackSignIn,
   fileInfo, readChunk, captionFor, ApiError } = require('../util');
 const crypto = require('crypto');
 const { googleClient, builtin } = require('../oauth/builtin');
@@ -57,16 +57,19 @@ module.exports = {
     if (!c) throw new Error('This copy of Creator Hub has no built-in Google sign-in. Open "Use my own developer keys" and enter a Google OAuth Client ID and Secret.');
     const verifier = randomVerifier();
     const state = crypto.randomUUID();
-    const url = `${AUTH}?` + new URLSearchParams({
-      client_id: c.clientId, redirect_uri: REDIRECT_URI, response_type: 'code', scope: SCOPES.join(' '),
-      access_type: 'offline', prompt: 'consent', include_granted_scopes: 'true', state,
-      code_challenge: challengeBase64Url(verifier), code_challenge_method: 'S256'
+    // Google desktop clients accept any loopback port, so use a free one (never "port in use").
+    const { code, redirectUri } = await loopbackSignIn({
+      port: 0, state, openExternal: ctx.openExternal,
+      buildUrl: redirect => `${AUTH}?` + new URLSearchParams({
+        client_id: c.clientId, redirect_uri: redirect, response_type: 'code', scope: SCOPES.join(' '),
+        access_type: 'offline', prompt: 'consent', include_granted_scopes: 'true', state,
+        code_challenge: challengeBase64Url(verifier), code_challenge_method: 'S256'
+      })
     });
-    const code = await waitForAuthCode({ authUrl: url, state, openExternal: ctx.openExternal });
     const { body } = await request('YouTube', TOKEN, {
       method: 'POST',
       body: toForm({ client_id: c.clientId, client_secret: c.clientSecret, code, code_verifier: verifier,
-        grant_type: 'authorization_code', redirect_uri: REDIRECT_URI })
+        grant_type: 'authorization_code', redirect_uri: redirectUri })
     });
     if (!body.refresh_token) throw new Error('Google did not return a refresh token. Remove Creator Hub at myaccount.google.com/permissions, then connect again.');
     let email = '';

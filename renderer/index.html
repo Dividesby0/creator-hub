@@ -2,26 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: file:; media-src 'self' file:; connect-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: file:; media-src 'self' file:; connect-src 'none'">
   <title>Creator Hub</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="ui.js"></script>
 </head>
 <body>
+  <div id="splash"><canvas id="splashfx"></canvas><div class="lockup"><span id="splashMark"></span><div class="word">Creator Hub</div><div class="sub">Plan it. Post it. See what worked.</div></div></div>
+  <canvas id="bgfx"></canvas>
   <nav id="nav">
-    <div class="brand"><span class="dot"></span>Creator Hub</div>
-    <button data-view="dashboard">Dashboard</button>
-    <button data-view="insights">Insights <span class="badge new">new</span></button>
-    <button data-view="compose">Compose</button>
-    <button data-view="queue">Queue</button>
-    <button data-view="calendar">Calendar</button>
-    <button data-view="approvals">Approvals <span class="badge" id="approvalBadge" hidden></span></button>
-    <button data-view="analytics">Post analytics</button>
-    <button data-view="accounts">Accounts</button>
-    <button data-view="settings">Settings</button>
+    <div class="brand"><span id="navMark"></span>Creator Hub</div>
+    <button data-view="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13h6V4H4zM14 20h6v-9h-6zM4 20h6v-3H4zM14 4v3h6V4z"/></svg><span class="lbl">Dashboard</span></button>
+    <button data-view="insights"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 5-6"/></svg><span class="lbl">Insights</span><span class="badge new">new</span></button>
+    <button data-view="compose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16zM13 7l4 4"/></svg><span class="lbl">Compose</span></button>
+    <button data-view="queue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span class="lbl">Queue</span></button>
+    <button data-view="calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/></svg><span class="lbl">Calendar</span></button>
+    <button data-view="approvals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10-10"/></svg><span class="lbl">Approvals</span><span class="badge" id="approvalBadge" hidden></span></button>
+    <button data-view="analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span class="lbl">Post analytics</span></button>
+    <button data-view="accounts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span class="lbl">Accounts</span></button>
+    <button data-view="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span class="lbl">Settings</span></button>
     <div class="spacer"></div>
     <div class="status" id="navStatus"></div>
   </nav>
   <div id="content"><div id="updateBanner" class="update-banner" hidden></div><main id="main"></main></div>
+  <script src="fx.js"></script>
   <script src="insights.js"></script>
   <script src="app.js"></script>
 </body>

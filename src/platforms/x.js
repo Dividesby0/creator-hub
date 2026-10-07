@@ -1,5 +1,5 @@
 'use strict';
-// X API v2 — OAuth 2.0 PKCE, v2 chunked media upload, create post. Pay-per-use: ~$0.015/post, $0.20 if it contains a link.
+// X API v2 - OAuth 2.0 PKCE, v2 chunked media upload, create post. Pay-per-use: ~$0.015/post, $0.20 if it contains a link.
 const { request, toForm, randomVerifier, challengeBase64Url, waitForAuthCode, REDIRECT_URI,
   fileInfo, readChunk, captionFor, sleep } = require('../util');
 const crypto = require('crypto');
@@ -7,6 +7,8 @@ const crypto = require('crypto');
 const AUTH = 'https://x.com/i/oauth2/authorize';
 const API = 'https://api.x.com/2';
 const SCOPES = ['tweet.read', 'tweet.write', 'users.read', 'media.write', 'offline.access'];
+const oneclick = require('../oauth/oneclick');
+const flows = require('../oauth/flows');
 const CHUNK = 4 * 1024 * 1024;
 const URL_RE = /https?:\/\/\S+/i;
 
@@ -19,12 +21,12 @@ function tokenHeaders(config) {
 async function refresh(ctx) {
   const s = ctx.account.secret;
   if (s.expiresAt && Date.now() < s.expiresAt - 60_000) return s.accessToken;
-  const c = ctx.account.config;
+  const c = s.clientId && s.clientId !== ctx.account.config.clientId ? { clientId: s.clientId } : ctx.account.config; // built-in app: public client
   const { body } = await request('X', `${API}/oauth2/token`, {
     method: 'POST', headers: tokenHeaders(c),
     body: toForm({ grant_type: 'refresh_token', refresh_token: s.refreshToken, client_id: c.clientId })
   });
-  const next = { accessToken: body.access_token, refreshToken: body.refresh_token || s.refreshToken, expiresAt: Date.now() + body.expires_in * 1000 };
+  const next = { ...s, accessToken: body.access_token, refreshToken: body.refresh_token || s.refreshToken, expiresAt: Date.now() + body.expires_in * 1000 };
   await ctx.saveSecret(next);
   return next.accessToken;
 }
@@ -70,8 +72,11 @@ module.exports = {
   ],
   postOptions: [],
 
+  oneClick: () => oneclick.available('x'),
+
   async connect(ctx) {
     const c = ctx.account.config;
+    if (!c.clientId && oneclick.available('x')) return flows.x(ctx, SCOPES);
     if (!c.clientId) throw new Error('Enter the OAuth 2.0 Client ID first.');
     const verifier = randomVerifier();
     const state = crypto.randomUUID();

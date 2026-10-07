@@ -43,36 +43,65 @@ function randomVerifier(len = 64) {
 const challengeBase64Url = v => crypto.createHash('sha256').update(v).digest('base64url');
 const challengeHex = v => crypto.createHash('sha256').update(v).digest('hex'); // TikTok desktop uses hex
 
-// ---- Loopback OAuth: opens the browser, waits for ?code on 127.0.0.1:8765/callback/ ----
-function waitForAuthCode({ authUrl, state, openExternal, timeoutMs = 5 * 60 * 1000 }) {
+// ---- Loopback OAuth: opens the browser, waits for ?code on 127.0.0.1:<port>/callback/ ----
+// Only one sign-in can be waiting at a time: starting a new one cancels the old listener, so a
+// second click on "Connect" never fails with "address already in use".
+let activeLogin = null;
+function cancelPendingSignIn(reason = 'Sign-in was restarted.') { if (activeLogin) activeLogin(new Error(reason)); }
+
+/**
+ * @param {object} o
+ * @param {(redirectUri:string)=>string} o.buildUrl  builds the provider's authorize URL
+ * @param {string} o.state  expected state value
+ * @param {number} [o.port] fixed port (registered redirect), or 0 for any free port (Google desktop apps)
+ * @returns {Promise<{code:string, redirectUri:string}>}
+ */
+function loopbackSignIn(opts) {
+  const { buildUrl, openExternal, port = OAUTH_PORT, timeoutMs = 5 * 60 * 1000 } = opts; // opts.state is read when the browser returns
+  cancelPendingSignIn();
   return new Promise((resolve, reject) => {
+    let redirectUri = '';
     const server = http.createServer((req, res) => {
-      const u = new URL(req.url, `http://127.0.0.1:${OAUTH_PORT}`);
+      const u = new URL(req.url, 'http://127.0.0.1');
       if (!u.pathname.startsWith('/callback')) { res.writeHead(404); return res.end(); }
       const err = u.searchParams.get('error');
       const code = u.searchParams.get('code');
       const gotState = u.searchParams.get('state');
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', Connection: 'close' });
-      if (err || !code || gotState !== state) {
-        res.end('<h2>Connection failed.</h2><p>You can close this tab and try again in Creator Hub.</p>');
-        finish(new Error(err ? `Authorization denied: ${err} ${u.searchParams.get('error_description') || ''}` : 'Invalid OAuth response (state mismatch or missing code)'));
+      const page = (title, msg, ok) => `<!doctype html><meta charset="utf-8"><title>Creator Hub</title><body style="margin:0;height:100vh;display:grid;place-items:center;background:#0b0d12;color:#e9ecf2;font:16px -apple-system,Segoe UI,sans-serif"><div style="text-align:center"><div style="font-size:44px">${ok ? '&#10003;' : '&#9888;'}</div><h2 style="margin:8px 0">${title}</h2><p style="color:#9aa3b2">${msg}</p></div></body>`;
+      if (err || !code || gotState !== opts.state) {
+        res.end(page('Connection failed', 'You can close this tab and try again in Creator Hub.', false));
+        finish(new Error(err ? `Sign-in was not completed (${err}${u.searchParams.get('error_description') ? ': ' + u.searchParams.get('error_description') : ''}).` : 'Sign-in response did not match. Please try again.'));
       } else {
-        res.end('<h2>Connected.</h2><p>You can close this tab and return to Creator Hub.</p>');
+        res.end(page('You are connected', 'You can close this tab and go back to Creator Hub.', true));
         finish(null, code);
       }
     });
     let done = false;
-    const timer = setTimeout(() => finish(new Error('Timed out waiting for authorization')), timeoutMs);
+    const timer = setTimeout(() => finish(new Error('Sign-in timed out. Click Connect to try again.')), timeoutMs);
     function finish(e, code) {
       if (done) return; done = true;
+      if (activeLogin === finish) activeLogin = null;
       clearTimeout(timer);
       server.close();
       setImmediate(() => server.closeAllConnections?.()); // drop browser keep-alive sockets so the next sign-in gets a fresh listener
-      e ? reject(e) : resolve(code);
+      e ? reject(e) : resolve({ code, redirectUri });
     }
-    server.on('error', e => finish(new Error(`Could not start local login listener on port ${OAUTH_PORT}: ${e.message}`)));
-    server.listen(OAUTH_PORT, '127.0.0.1', () => openExternal(authUrl));
+    activeLogin = finish;
+    server.on('error', e => finish(new Error(e.code === 'EADDRINUSE'
+      ? 'Another app is using the sign-in port. Close other Creator Hub windows and try again.'
+      : `Could not start sign-in: ${e.message}`)));
+    server.listen(port, '127.0.0.1', () => {
+      redirectUri = `http://127.0.0.1:${server.address().port}/callback/`;
+      openExternal(buildUrl(redirectUri));
+    });
   });
+}
+
+// Back-compat helper for providers with a fixed registered redirect (TikTok, X).
+async function waitForAuthCode({ authUrl, state, openExternal, timeoutMs }) {
+  const { code } = await loopbackSignIn({ buildUrl: () => authUrl, state, openExternal, timeoutMs });
+  return code;
 }
 
 // ---- files ----
@@ -115,6 +144,6 @@ function captionFor(post, pid, settings, maxLen) {
 
 module.exports = {
   OAUTH_PORT, REDIRECT_URI, ApiError, request, toForm,
-  randomVerifier, challengeBase64Url, challengeHex, waitForAuthCode,
+  randomVerifier, challengeBase64Url, challengeHex, waitForAuthCode, loopbackSignIn, cancelPendingSignIn,
   fileInfo, readChunk, sleep, captionFor
 };

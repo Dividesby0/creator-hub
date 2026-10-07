@@ -22,7 +22,8 @@ const DEFAULT_DATA = {
     appendAiHashtag: true,
     analyticsIntervalHours: 6,
     maxAttempts: 3,
-    onboarded: false              // first-run setup wizard completed or skipped
+    onboarded: false,             // first-run setup wizard completed or skipped
+    theme: 'midnight'             // midnight | aurora | ultraviolet | ember | daylight
   },
   log: []
 };

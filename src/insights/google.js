@@ -3,7 +3,7 @@
 // One OAuth sign-in (installed-app loopback + PKCE). Every source is fetched independently so
 // one missing API / permission never blanks the whole dashboard.
 const crypto = require('crypto');
-const { request, toForm, randomVerifier, challengeBase64Url, waitForAuthCode, REDIRECT_URI } = require('../util');
+const { request, toForm, randomVerifier, challengeBase64Url, loopbackSignIn } = require('../util');
 const { compare } = require('./ranges');
 
 const AUTH = 'https://accounts.google.com/o/oauth2/v2/auth';
@@ -52,15 +52,17 @@ class GoogleInsights {
     if (!clientId || !clientSecret) throw new Error('Enter the Google OAuth Client ID and Secret first (the same Desktop-app client you use for YouTube works).');
     const verifier = randomVerifier();
     const state = crypto.randomUUID();
-    const url = `${AUTH}?` + new URLSearchParams({
-      client_id: clientId, redirect_uri: REDIRECT_URI, response_type: 'code', scope: SCOPES.join(' '),
-      access_type: 'offline', prompt: 'consent', include_granted_scopes: 'true', state,
-      code_challenge: challengeBase64Url(verifier), code_challenge_method: 'S256'
+    const { code, redirectUri } = await loopbackSignIn({
+      port: 0, state, openExternal: this.ctx.openExternal,
+      buildUrl: redirect => `${AUTH}?` + new URLSearchParams({
+        client_id: clientId, redirect_uri: redirect, response_type: 'code', scope: SCOPES.join(' '),
+        access_type: 'offline', prompt: 'consent', include_granted_scopes: 'true', state,
+        code_challenge: challengeBase64Url(verifier), code_challenge_method: 'S256'
+      })
     });
-    const code = await waitForAuthCode({ authUrl: url, state, openExternal: this.ctx.openExternal });
     const { body } = await request('Google', TOKEN, {
       method: 'POST',
-      body: toForm({ client_id: clientId, client_secret: clientSecret, code, code_verifier: verifier, grant_type: 'authorization_code', redirect_uri: REDIRECT_URI })
+      body: toForm({ client_id: clientId, client_secret: clientSecret, code, code_verifier: verifier, grant_type: 'authorization_code', redirect_uri: redirectUri })
     });
     if (!body.refresh_token) throw new Error('Google did not return a refresh token. Remove Creator Hub from your Google account permissions and connect again.');
     let email = '';

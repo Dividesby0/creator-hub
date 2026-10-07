@@ -1,5 +1,5 @@
 'use strict';
-// TikTok Content Posting API — Login Kit for Desktop (PKCE hex), inbox upload (drafts) or direct post.
+// TikTok Content Posting API - Login Kit for Desktop (PKCE hex), inbox upload (drafts) or direct post.
 const { request, toForm, randomVerifier, challengeHex, waitForAuthCode, REDIRECT_URI,
   fileInfo, readChunk, captionFor, sleep, ApiError } = require('../util');
 const crypto = require('crypto');
@@ -7,16 +7,19 @@ const crypto = require('crypto');
 const AUTH = 'https://www.tiktok.com/v2/auth/authorize/';
 const API = 'https://open.tiktokapis.com/v2';
 const SCOPES = ['user.info.basic', 'user.info.stats', 'video.upload', 'video.publish', 'video.list'];
+const oneclick = require('../oauth/oneclick');
+const flows = require('../oauth/flows');
 const MIN_CHUNK = 5 * 1024 * 1024, MAX_SINGLE = 64 * 1024 * 1024, CHUNK = 10 * 1024 * 1024;
 
 function tt(body) {
-  if (body?.error && body.error.code && body.error.code !== 'ok') throw new ApiError('TikTok', 200, body, `TikTok: ${body.error.code} — ${body.error.message}`);
+  if (body?.error && body.error.code && body.error.code !== 'ok') throw new ApiError('TikTok', 200, body, `TikTok: ${body.error.code}: ${body.error.message}`);
   return body;
 }
 
 async function refresh(ctx) {
   const s = ctx.account.secret;
   if (s.expiresAt && Date.now() < s.expiresAt - 60_000) return s.accessToken;
+  if (s.via === 'relay') { const next = await require('../oauth/flows').tiktokRefresh(s); await ctx.saveSecret(next); return next.accessToken; }
   const { body } = await request('TikTok', `${API}/oauth/token/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -65,8 +68,11 @@ module.exports = {
     { key: 'privacy', label: 'Privacy (direct mode)', type: 'select', options: ['PUBLIC_TO_EVERYONE', 'MUTUAL_FOLLOW_FRIENDS', 'FOLLOWER_OF_CREATOR', 'SELF_ONLY'], default: 'PUBLIC_TO_EVERYONE' }
   ],
 
+  oneClick: () => oneclick.available('tiktok'),
+
   async connect(ctx) {
     const { clientKey, clientSecret } = ctx.account.config;
+    if (!clientKey && oneclick.available('tiktok')) return flows.tiktok(ctx);
     if (!clientKey || !clientSecret) throw new Error('Enter the Client key and Client secret first.');
     const verifier = randomVerifier();
     const state = crypto.randomUUID();
@@ -130,7 +136,7 @@ module.exports = {
     return {
       remoteId: postId ? String(postId) : init.data.publish_id,
       url: postId ? `https://www.tiktok.com/video/${postId}` : '',
-      note: direct ? `Status: ${status}` : 'Sent to your TikTok inbox — open the TikTok app to add sound/caption and post it.'
+      note: direct ? `Status: ${status}` : 'Sent to your TikTok inbox. Open the TikTok app to add sound or a caption and post it.'
     };
   },
 

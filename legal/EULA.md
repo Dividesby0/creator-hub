@@ -1,7 +1,7 @@
-CREATOR HUB — END USER LICENSE AGREEMENT
+CREATOR HUB: END USER LICENSE AGREEMENT
 Version 1.0 · Effective [EFFECTIVE DATE]
 
-IMPORTANT — READ CAREFULLY. This End User License Agreement ("Agreement") is a legal agreement between you (either an individual or a single legal entity, "you") and [COMPANY LEGAL NAME], [STATE/COUNTRY OF ORGANIZATION] ("Licensor", "we", "us"), for the Creator Hub software, including any updates, documentation, and related materials (the "Software"). By checking "I accept", activating, installing, or using the Software, you agree to be bound by this Agreement. If you do not agree, do not activate, install, or use the Software.
+IMPORTANT: READ CAREFULLY. This End User License Agreement ("Agreement") is a legal agreement between you (either an individual or a single legal entity, "you") and [COMPANY LEGAL NAME], [STATE/COUNTRY OF ORGANIZATION] ("Licensor", "we", "us"), for the Creator Hub software, including any updates, documentation, and related materials (the "Software"). By checking "I accept", activating, installing, or using the Software, you agree to be bound by this Agreement. If you do not agree, do not activate, install, or use the Software.
 
 1. DEFINITIONS
 1.1 "License Key" means the unique alphanumeric key issued by Licensor that identifies your license, edition, and number of permitted Devices.

@@ -1,5 +1,6 @@
 'use strict';
 const $ = s => document.querySelector(s);
+if (typeof FX !== 'undefined') { $('#licMark').innerHTML = FX.mark('mark'); $('#licMark svg').style.width = '34px'; $('#licMark svg').style.height = '34px'; FX.start($('#bgfx'), { intensity: 0.6 }); }
 const clean = m => String(m?.message || m).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 const showErr = m => { $('#err').innerHTML = ''; if (m) { const d = document.createElement('div'); d.className = 'note'; d.textContent = m; $('#err').appendChild(d); window.scrollTo(0, 0); } };
 const needEula = () => { if (!$('#accept').checked) { showErr('Please read and accept the License Agreement first.'); return false; } return true; };
@@ -8,7 +9,7 @@ const needEula = () => { if (!$('#accept').checked) { showErr('Please read and a
   const st = await hub.license.status();
   $('#device').textContent = st.device;
   if (st.error) showErr(st.error);
-  if (!st.server) { $('#online').disabled = true; $('#onlineNote').textContent = 'Online activation is not configured for this build — use offline activation below.'; }
+  if (!st.server) { $('#online').disabled = true; $('#onlineNote').textContent = 'Online activation is not configured for this build. Use offline activation below.'; }
   $('#eula').textContent = await hub.license.eula();
 })();
 
