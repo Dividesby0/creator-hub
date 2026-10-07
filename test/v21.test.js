@@ -193,3 +193,11 @@ test('TikTok one-click: relay redirect carries the local port in state; tokens c
   assert.deepStrictEqual(JSON.parse(calls[0].body), { grant_type: 'authorization_code', code: 'C9', redirect_uri: 'https://relay.example/v1/oauth/cb/tiktok' });
   builtinMod._reset(null, null);
 });
+
+test('saved "own" keys that reuse the built-in client ID never override the built-in secret', () => {
+  builtinMod._reset({ google: { clientId: 'builtin-id', clientSecret: 'right' } });
+  const c = builtinMod.googleClient({ own: { clientId: 'builtin-id', clientSecret: 'mistyped' } });
+  assert.strictEqual(c.clientSecret, 'right');
+  assert.strictEqual(c.source, 'builtin');
+  builtinMod._reset(null);
+});

@@ -46,7 +46,11 @@ const hasOwn = cfg => !!(cfg && cfg.clientId && cfg.clientSecret);
  * only work with the client that created them), then the user's own keys, then the built-in app.
  */
 function googleClient({ own, alt, tokenClientId } = {}) {
-  const candidates = [hasOwn(own) && { ...own, source: 'own' }, hasOwn(alt) && { ...alt, source: 'own' }, builtin('google') && { ...builtin('google'), source: 'builtin' }].filter(Boolean);
+  const b = builtin('google');
+  // "Own" keys that carry the built-in client ID are not really own keys: always use the built-in
+  // secret for them (a mistyped secret there would otherwise break sign-in with invalid_client).
+  const isOwn = c => hasOwn(c) && !(b && c.clientId.trim() === b.clientId);
+  const candidates = [isOwn(own) && { ...own, source: 'own' }, isOwn(alt) && { ...alt, source: 'own' }, b && { ...b, source: 'builtin' }].filter(Boolean);
   if (tokenClientId) { const m = candidates.find(c => c.clientId === tokenClientId); if (m) return m; }
   return candidates[0] || null;
 }

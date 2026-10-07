@@ -47,7 +47,10 @@ class InsightsService {
   }
 
   /** True when the user set their own Insights-only keys (power users). */
-  hasOwnClient() { const own = { ...this.s.config, ...this._dec(this.s.secretConfig) }; return !!(own.clientId && own.clientSecret); }
+  hasOwnClient() {
+    const own = { ...this.s.config, ...this._dec(this.s.secretConfig) };
+    return googleClient({ own })?.source === 'own' && !!(own.clientId && own.clientSecret);
+  }
 
   view() {
     const secret = this._dec(this.s.secret);
