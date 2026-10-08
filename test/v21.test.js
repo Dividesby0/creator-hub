@@ -201,3 +201,33 @@ test('saved "own" keys that reuse the built-in client ID never override the buil
   assert.strictEqual(c.source, 'builtin');
   builtinMod._reset(null);
 });
+
+test('TikTok one-click with Spektly\'s built-in desktop app: free loopback port, hex PKCE, secret exchange, no relay', async () => {
+  builtinMod._reset({ tiktok: { clientSecret: 'TT-SECRET' } }, { tiktok: { clientKey: 'TTKEY' } });
+  const oc = require('../src/oauth/oneclick');
+  assert.strictEqual(oc.available('tiktok'), true, 'no relay needed when the built-in secret is present');
+  const calls = [];
+  global.fetch = async (url, opts = {}) => {
+    calls.push({ url: String(url), body: String(opts.body || '') });
+    if (String(url).includes('/v2/oauth/token/')) return Response.json({ access_token: 'AT', refresh_token: 'RT', expires_in: 86400 });
+    if (String(url).includes('/user/info/')) return Response.json({ data: { user: { display_name: 'decrypt443', open_id: 'O1' } } });
+    throw new Error('unmocked ' + url);
+  };
+  let auth;
+  const engine = new Engine({ store: new Store(tmp()), box, openExternal: url => {
+    auth = new URL(url);
+    const cb = auth.searchParams.get('redirect_uri');
+    setTimeout(() => http.get(`${cb}?code=C7&state=${auth.searchParams.get('state')}`, { agent: false }, r => r.resume()), 20);
+  } });
+  const profile = await engine.connect('tiktok');
+  assert.strictEqual(profile.name, 'decrypt443');
+  assert.strictEqual(auth.searchParams.get('client_key'), 'TTKEY');
+  assert.match(auth.searchParams.get('redirect_uri'), /^http:\/\/127\.0\.0\.1:\d+\/callback\/$/);
+  assert.match(auth.searchParams.get('code_challenge'), /^[0-9a-f]{64}$/, 'TikTok desktop wants a hex SHA-256 challenge');
+  const tok = new URLSearchParams(calls.find(c => c.url.includes('/oauth/token/')).body);
+  assert.strictEqual(tok.get('client_secret'), 'TT-SECRET');
+  assert.strictEqual(tok.get('redirect_uri'), auth.searchParams.get('redirect_uri'));
+  assert.ok(tok.get('code_verifier') && tok.get('code_verifier').length >= 43);
+  assert.ok(!calls.some(c => c.url.includes('relay')), 'never touches the relay');
+  builtinMod._reset(null, null);
+});

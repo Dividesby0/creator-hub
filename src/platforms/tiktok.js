@@ -19,7 +19,7 @@ function tt(body) {
 async function refresh(ctx) {
   const s = ctx.account.secret;
   if (s.expiresAt && Date.now() < s.expiresAt - 60_000) return s.accessToken;
-  if (s.via === 'relay') { const next = await require('../oauth/flows').tiktokRefresh(s); await ctx.saveSecret(next); return next.accessToken; }
+  if (s.via === 'relay' || s.via === 'builtin') { const next = await require('../oauth/flows').tiktokRefresh(s); await ctx.saveSecret(next); return next.accessToken; }
   const { body } = await request('TikTok', `${API}/oauth/token/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

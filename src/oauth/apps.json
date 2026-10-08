@@ -1,9 +1,22 @@
 {
   "_comment": "Spektly's own registered apps. These IDs are public by design. App secrets never live here: they are held by the sign-in relay (vendor/activation-server) or injected at build time. Fill each in once the platform approves the app; until then that platform uses the guided setup.",
-  "relay": { "url": "" },
-  "x": { "clientId": "" },
-  "tiktok": { "clientKey": "" },
-  "instagram": { "appId": "" },
-  "threads": { "appId": "" },
-  "facebook": { "appId": "" }
+  "relay": {
+    "url": ""
+  },
+  "x": {
+    "clientId": ""
+  },
+  "tiktok": {
+    "clientKey": "sbaw06xbuy1myb3xzz",
+    "_note": "Sandbox key (app \"Spektly\", sandbox \"Spektly testing\"). Swap for the production key after TikTok approves the app."
+  },
+  "instagram": {
+    "appId": ""
+  },
+  "threads": {
+    "appId": ""
+  },
+  "facebook": {
+    "appId": ""
+  }
 }

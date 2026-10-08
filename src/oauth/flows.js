@@ -1,23 +1,48 @@
 'use strict';
 // One-click connect flows per platform (used when the user has not entered their own app keys).
 const crypto = require('crypto');
-const { request, randomVerifier, challengeBase64Url, loopbackSignIn, toForm, REDIRECT_URI } = require('../util');
+const { request, randomVerifier, challengeBase64Url, challengeHex, loopbackSignIn, toForm, REDIRECT_URI } = require('../util');
+const { builtinSecret } = require('./builtin');
 const oc = require('./oneclick');
 
 const FB = 'https://graph.facebook.com/v23.0';
 const enc = encodeURIComponent;
 
+const TT_SCOPE = 'user.info.basic,user.info.stats,video.upload,video.publish,video.list';
+const TT_TOKEN = 'https://open.tiktokapis.com/v2/oauth/token/';
+async function tiktokProfile(secret) {
+  const me = await request('TikTok', 'https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name', { headers: { Authorization: `Bearer ${secret.accessToken}` } });
+  return { name: me.body.data?.user?.display_name || 'TikTok account', id: me.body.data?.user?.open_id };
+}
+function ttTokens(body) {
+  if (body.error) throw new Error(`TikTok sign-in failed: ${body.error_description || body.error}`);
+  return body;
+}
 async function tiktok(ctx) {
-  const scope = 'user.info.basic,user.info.stats,video.upload,video.publish,video.list';
+  const clientKey = oc.appId('tiktok');
+  if (builtinSecret('tiktok')) {
+    // Spektly's TikTok desktop app: any free local port (registered as http://127.0.0.1:*/callback/), PKCE with a hex challenge.
+    const verifier = randomVerifier();
+    const state = crypto.randomUUID();
+    const { code, redirectUri } = await loopbackSignIn({ port: 0, state, openExternal: ctx.openExternal,
+      buildUrl: redirectUri => 'https://www.tiktok.com/v2/auth/authorize/?' + new URLSearchParams({ client_key: clientKey, scope: TT_SCOPE, response_type: 'code', redirect_uri: redirectUri, state, code_challenge: challengeHex(verifier), code_challenge_method: 'S256' }) });
+    const { body } = await request('TikTok', TT_TOKEN, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: toForm({ client_key: clientKey, client_secret: builtinSecret('tiktok'), code, grant_type: 'authorization_code', redirect_uri: redirectUri, code_verifier: verifier }) });
+    const t = ttTokens(body);
+    const secret = { accessToken: t.access_token, refreshToken: t.refresh_token, expiresAt: Date.now() + t.expires_in * 1000, via: 'builtin' };
+    return { secret, profile: await tiktokProfile(secret) };
+  }
   const { code, redirectUri } = await oc.relaySignIn('tiktok', { openExternal: ctx.openExternal,
-    buildUrl: ({ redirectUri, state }) => 'https://www.tiktok.com/v2/auth/authorize/?' + new URLSearchParams({ client_key: oc.appId('tiktok'), scope, response_type: 'code', redirect_uri: redirectUri, state }) });
+    buildUrl: ({ redirectUri, state }) => 'https://www.tiktok.com/v2/auth/authorize/?' + new URLSearchParams({ client_key: clientKey, scope: TT_SCOPE, response_type: 'code', redirect_uri: redirectUri, state }) });
   const t = await oc.relayToken('tiktok', { grant_type: 'authorization_code', code, redirect_uri: redirectUri });
   const secret = { accessToken: t.access_token, refreshToken: t.refresh_token, expiresAt: Date.now() + t.expires_in * 1000, via: 'relay' };
-  const me = await request('TikTok', 'https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name', { headers: { Authorization: `Bearer ${secret.accessToken}` } });
-  return { secret, profile: { name: me.body.data?.user?.display_name || 'TikTok account', id: me.body.data?.user?.open_id } };
+  return { secret, profile: await tiktokProfile(secret) };
 }
 async function tiktokRefresh(s) {
-  const t = await oc.relayToken('tiktok', { grant_type: 'refresh_token', refresh_token: s.refreshToken });
+  const t = s.via === 'builtin'
+    ? ttTokens((await request('TikTok', TT_TOKEN, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: toForm({ client_key: oc.appId('tiktok'), client_secret: builtinSecret('tiktok'), grant_type: 'refresh_token', refresh_token: s.refreshToken }) })).body)
+    : await oc.relayToken('tiktok', { grant_type: 'refresh_token', refresh_token: s.refreshToken });
   return { ...s, accessToken: t.access_token, refreshToken: t.refresh_token || s.refreshToken, expiresAt: Date.now() + t.expires_in * 1000 };
 }
 

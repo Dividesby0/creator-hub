@@ -6,7 +6,7 @@
 // Tokens are never stored on the relay: they come straight back here and are encrypted locally.
 const crypto = require('crypto');
 const { loopbackSignIn, request } = require('../util');
-const { appValue } = require('./builtin');
+const { appValue, builtinSecret } = require('./builtin');
 
 const ID_FIELD = { x: 'clientId', tiktok: 'clientKey', instagram: 'appId', threads: 'appId', facebook: 'appId' };
 const relayUrl = () => appValue('relay', 'url').replace(/\/+$/, '');
@@ -15,7 +15,9 @@ const appId = provider => appValue(provider, ID_FIELD[provider]);
 /** Is one-click sign-in available for this platform in this build? */
 function available(provider) {
   if (!ID_FIELD[provider] || !appId(provider)) return false;
-  return provider === 'x' ? true : !!relayUrl();
+  if (provider === 'x') return true;
+  if (provider === 'tiktok' && builtinSecret('tiktok')) return true; // desktop app: loopback redirect, no relay needed
+  return !!relayUrl();
 }
 
 /**

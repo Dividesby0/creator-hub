@@ -22,6 +22,9 @@ function load() {
   return cache;
 }
 
+// Secrets for other platforms' built-in apps (e.g. TikTok desktop needs one for its token exchange).
+function builtinSecret(provider) { return String(load()[provider]?.clientSecret || '').trim(); }
+
 function builtin(provider) {
   const c = load()[provider];
   return c && c.clientId && c.clientSecret ? { clientId: c.clientId, clientSecret: c.clientSecret } : null;
@@ -57,4 +60,4 @@ function googleClient({ own, alt, tokenClientId } = {}) {
 
 function _reset(next, nextApps) { cache = next || null; appsCache = nextApps || null; } // tests
 
-module.exports = { builtin, googleClient, hasOwn, apps, appValue, _reset };
+module.exports = { builtin, builtinSecret, googleClient, hasOwn, apps, appValue, _reset };
