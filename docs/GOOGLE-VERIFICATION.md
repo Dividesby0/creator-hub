@@ -6,9 +6,9 @@ This is the step-by-step checklist for moving the **decrypt443** Google Cloud pr
 - [x] APIs enabled: YouTube Data v3, YouTube Analytics, Analytics Data, Analytics Admin, Search Console, My Business Account Management, My Business Business Information, Business Profile Performance
 - [x] Google Auth Platform configured: app name **Spektly**, External, support/contact `decrypt443@gmail.com`, test user `decrypt443@gmail.com`
 - [x] Desktop-app OAuth client **Spektly Desktop** (ID in `PRIVATE - License Vendor Keys/Google OAuth - decrypt443.txt`)
-- [ ] Public website with home page, privacy policy and terms (see §1)
-- [ ] Domain verified in Google Search Console and added as an authorized domain
-- [ ] Branding completed, then **Publish app**
+- [x] Public website at https://spektly.com with home page, privacy policy and terms (see §1)
+- [x] spektly.com verified in Google Search Console (DNS TXT at Hostinger, keep it) and set as the authorized domain
+- [ ] Branding: name and links done (Oct 8, 2026); logo deferred until verification. Next: **Publish app**
 - [ ] Verification submitted (scopes justification + demo video, see §3–4)
 - [ ] Business Profile API access request approved (separate form, see §5)
 
