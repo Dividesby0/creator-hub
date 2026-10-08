@@ -1,5 +1,5 @@
 'use strict';
-/* Creator Hub renderer - vanilla JS, no remote code. */
+/* Spektly renderer - vanilla JS, no remote code. */
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -36,7 +36,7 @@ async function refresh() {
   const upcoming = S.posts.filter(p => p.status === 'approved').length;
   const connected = S.accounts.filter(a => a.connected).length;
   const ub = $('#updateBanner');
-  if (ub) { ub.hidden = !S.update; if (S.update) ub.innerHTML = `Creator Hub ${S.update.version} is available. <a data-url="${S.update.url}">Download it</a>. Installing it replaces this version automatically.`; }
+  if (ub) { ub.hidden = !S.update; if (S.update) ub.innerHTML = `Spektly ${S.update.version} is available. <a data-url="${S.update.url}">Download it</a>. Installing it replaces this version automatically.`; }
   if (S.settings.theme && document.documentElement.dataset.theme !== S.settings.theme) Theme.apply(S.settings.theme);
   renderWizard();
   $('#navStatus').innerHTML = `${connected}/6 accounts connected<br>${upcoming} post${upcoming === 1 ? '' : 's'} scheduled<br><span class="small">Posts only while this app is running.</span><br><span class="small">v${S.version || ''}</span>`;
@@ -348,12 +348,12 @@ const ASSIST = {
     'Make sure your Instagram account is a Professional (Creator or Business) account.',
     'Open Meta for Developers, create an app and add the <b>Instagram</b> product.',
     'Under API setup with Instagram login, add your account and click <b>Generate token</b>.',
-    'Paste the token below. Leave the account ID blank: Creator Hub finds it.'] },
+    'Paste the token below. Leave the account ID blank: Spektly finds it.'] },
   threads: { portal: 'https://developers.facebook.com/apps', steps: [
     'Open Meta for Developers and create an app with the <b>Threads API</b> use case.',
     'Add threads_basic, threads_content_publish and threads_manage_insights.',
     'Under App roles, add your Threads account as a tester, then accept it in Threads: Settings, Account, Website permissions.',
-    'Generate a user token and paste it below. Creator Hub keeps it fresh.'] },
+    'Generate a user token and paste it below. Spektly keeps it fresh.'] },
   facebook: { portal: 'https://developers.facebook.com/tools/explorer/', steps: [
     'Open Graph API Explorer and pick your app.',
     'Add pages_show_list, pages_manage_posts, pages_read_engagement and read_insights, then click <b>Generate Access Token</b>.',
@@ -369,7 +369,7 @@ const Assist = {
   open(pid) {
     const a = S.accounts.find(x => x.id === pid), g = ASSIST[pid];
     const copy = `<div class="copyfield"><code>${REDIRECT}</code><button class="btn sm" data-action="copy" data-text="${REDIRECT}">Copy</button></div>`;
-    const html = `<p class="muted" style="margin-top:0">${a.oneClick ? `Only needed if you want to use your own ${esc(a.name)} developer app instead of one-click sign-in.` : `About five minutes, once. Creator Hub remembers it after that.`}</p>
+    const html = `<p class="muted" style="margin-top:0">${a.oneClick ? `Only needed if you want to use your own ${esc(a.name)} developer app instead of one-click sign-in.` : `About five minutes, once. Spektly remembers it after that.`}</p>
       <ol class="steps-list">${g.steps.map(t => `<li>${t.replace('{copy}', copy)}</li>`).join('')}</ol>
       <div class="row" style="margin:2px 0 16px"><button class="btn" data-url="${g.portal}">Open ${esc(a.name)} developer site</button></div>
       ${ownKeysForm(a)}
@@ -389,7 +389,7 @@ function wizardHtml() {
   let body = '';
   if (wizStep === 0) {
     body = `<div style="text-align:center;padding:6px 0 4px">${FX.mark('mark')}</div>
-      <h1 style="text-align:center">Welcome to Creator Hub</h1>
+      <h1 style="text-align:center">Welcome to Spektly</h1>
       <p class="muted" style="font-size:15px;line-height:1.6;text-align:center;max-width:46ch;margin:8px auto 0">Plan, approve and publish to every channel from one place, then see all your numbers together. Setup takes about two minutes.</p>
       ${nav(false, true, 'Get started')}`;
   } else if (wizStep === 1) {
@@ -404,11 +404,11 @@ function wizardHtml() {
     const opt = (k, title, help) => `<label class="wiz-opt"><input type="checkbox" data-setting="${k}" ${st[k] ? 'checked' : ''}><div><b>${title}</b><div class="muted small">${help}</div></div></label>`;
     body = `<h1>How should posting work?</h1>
       ${opt('requireApproval', 'Let me approve posts before they go out', 'Recommended. New posts wait in Approvals until you click Approve.')}
-      ${opt('keepRunningInBackground', 'Keep posting when the window is closed', 'Creator Hub stays in the menu bar and posts on schedule.')}
-      ${opt('launchAtLogin', 'Start Creator Hub when I turn on my computer', 'So scheduled posts are never missed.')}
+      ${opt('keepRunningInBackground', 'Keep posting when the window is closed', 'Spektly stays in the menu bar and posts on schedule.')}
+      ${opt('launchAtLogin', 'Start Spektly when I turn on my computer', 'So scheduled posts are never missed.')}
       ${nav(true, true)}`;
   } else if (wizStep === 3) {
-    body = `<h1>Pick a look</h1><p class="muted">You can change this any time in Settings.</p>${Theme.picker(S.settings.theme || 'midnight')}${nav(true, true)}`;
+    body = `<h1>Pick a look</h1><p class="muted">You can change this any time in Settings.</p>${Theme.picker(S.settings.theme || 'spektly')}${nav(true, true)}`;
   } else {
     const n = S.accounts.filter(a => a.connected).length;
     body = `<h1>You're all set</h1>
@@ -442,12 +442,12 @@ function settings() {
   const s = S.settings, L = S.license;
   const tog = (k, label, help) => `<label class="check" style="margin-bottom:10px"><input type="checkbox" data-setting="${k}" ${s[k] ? 'checked' : ''}> <span>${label}${help ? `<div class="muted small">${help}</div>` : ''}</span></label>`;
   return `<div class="header"><div><h1>Settings</h1></div></div>
-  <div class="card" style="margin-bottom:14px"><h2>Appearance</h2>${Theme.picker(s.theme || 'midnight')}</div>
+  <div class="card" style="margin-bottom:14px"><h2>Appearance</h2>${Theme.picker(s.theme || 'spektly')}</div>
   <div class="grid g2" style="align-items:start">
     <div class="card"><h2>Publishing</h2>
       ${tog('requireApproval', 'Require approval before anything posts', 'New and imported posts wait in Approvals.')}
-      ${tog('keepRunningInBackground', 'Keep running in the background when the window is closed', 'Scheduled posts only go out while Creator Hub is running.')}
-      ${tog('launchAtLogin', 'Start Creator Hub when I log in')}
+      ${tog('keepRunningInBackground', 'Keep running in the background when the window is closed', 'Scheduled posts only go out while Spektly is running.')}
+      ${tog('launchAtLogin', 'Start Spektly when I log in')}
       ${tog('appendAiHashtag', 'Add an AI-disclosure hashtag to AI-labelled posts')}
       <label class="field"><span>AI hashtag</span><input type="text" data-setting-text="aiHashtag" value="${esc(s.aiHashtag)}"></label>
       <label class="field"><span>Retry attempts per platform</span><input type="number" min="1" max="10" data-setting-num="maxAttempts" value="${s.maxAttempts}"></label>
@@ -466,7 +466,7 @@ function settings() {
         <div class="row" style="margin-top:12px"><button class="btn danger" data-action="deactivate">Deactivate this device</button></div>
         <div class="muted small" style="margin-top:6px">Deactivating frees this seat so you can move your license to another computer.</div>` : ''}
       <h2 style="margin-top:18px">About</h2>
-      <div class="muted small" style="line-height:1.9">${esc(S.brand?.name || 'Creator Hub')} ${esc(S.version)} by ${esc(S.brand?.publisher || '')}<br>
+      <div class="muted small" style="line-height:1.9">${esc(S.brand?.name || 'Spektly')} ${esc(S.version)} by ${esc(S.brand?.publisher || '')}<br>
         <a data-url="${esc(S.brand?.siteUrl || '')}">Website</a> &nbsp; <a data-url="${esc(S.brand?.privacyUrl || '')}">Privacy policy</a> &nbsp; <a data-url="${esc(S.brand?.termsUrl || '')}">Terms</a> &nbsp; <a data-url="mailto:${esc(S.brand?.supportEmail || '')}">Contact support</a></div>
       <h2 style="margin-top:18px">Activity log</h2>
       <div class="log">${S.log.map(l => `<div class="${l.level}"><span class="muted">${fmtDate(l.at)}</span> ${esc(l.message)}</div>`).join('') || '<div class="muted">No activity yet.</div>'}</div>
@@ -535,7 +535,7 @@ document.addEventListener('click', async e => {
     }
     case 'retry': await run(() => hub.posts.retry(id), 'Retrying now.'); await refresh(); break;
     case 'duplicate': await run(() => hub.posts.duplicate(id), 'Duplicated for tomorrow.'); await refresh(); break;
-    case 'delete': if (await Modal.confirm('Posts that already went out stay live on the platforms.', { title: 'Delete this post from Creator Hub?', ok: 'Delete', danger: true })) { await run(() => hub.posts.remove(id)); await refresh(); } break;
+    case 'delete': if (await Modal.confirm('Posts that already went out stay live on the platforms.', { title: 'Delete this post from Spektly?', ok: 'Delete', danger: true })) { await run(() => hub.posts.remove(id)); await refresh(); } break;
     case 'calPrev': calMonth.setMonth(calMonth.getMonth() - 1); render(); break;
     case 'calNext': calMonth.setMonth(calMonth.getMonth() + 1); render(); break;
     case 'calToday': calMonth = new Date(); calMonth.setDate(1); render(); break;
@@ -561,7 +561,7 @@ document.addEventListener('click', async e => {
     case 'runSetup': await hub.onboarding.restart(); await refresh(); wizStep = 0; openWizard(); break;
     case 'assist': Assist.open(pid); break;
     case 'disconnect': if (await Modal.confirm('Scheduled posts to this account will fail until you connect it again.', { title: `Disconnect ${esc(pname(pid))}?`, ok: 'Disconnect', danger: true })) { await run(() => hub.accounts.disconnect(pid)); await refresh(); } break;
-    case 'deactivate': if (await Modal.confirm('You will need your license key to activate Creator Hub on this computer again.', { title: 'Deactivate this computer?', ok: 'Deactivate', danger: true })) await run(() => hub.license.deactivate()); break;
+    case 'deactivate': if (await Modal.confirm('You will need your license key to activate Spektly on this computer again.', { title: 'Deactivate this computer?', ok: 'Deactivate', danger: true })) await run(() => hub.license.deactivate()); break;
   }
 });
 

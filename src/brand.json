@@ -1,9 +1,9 @@
 {
-  "_comment": "One place for public addresses. When you move to your own domain and email, change these (and docs/CNAME), then rebuild. Also update the Google Auth Platform Branding page and authorized domain.",
-  "name": "Creator Hub",
+  "_comment": "One place for public addresses. If these ever change, update them here (and docs/CNAME), then rebuild. Also update the Google Auth Platform Branding page and authorized domain.",
+  "name": "Spektly",
   "publisher": "Decrypt443",
-  "siteUrl": "https://dividesby0.github.io/creator-hub/",
-  "privacyUrl": "https://dividesby0.github.io/creator-hub/privacy/",
-  "termsUrl": "https://dividesby0.github.io/creator-hub/terms/",
-  "supportEmail": "decrypt443@gmail.com"
+  "siteUrl": "https://spektly.com/",
+  "privacyUrl": "https://spektly.com/privacy/",
+  "termsUrl": "https://spektly.com/terms/",
+  "supportEmail": "info@spektly.com"
 }

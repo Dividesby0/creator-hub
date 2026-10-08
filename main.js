@@ -13,12 +13,31 @@ const { checkForUpdate } = require('./src/installer/updates');
 const os = require('os');
 const pkg = require('./package.json');
 
+// The app used to be called "Creator Hub". Its data folder is named after the app, so on the first
+// run of Spektly copy the old folder over (posts, accounts, license, settings, theme). Runs before
+// anything else touches the data folder. The old folder is left in place as a backup.
+const LEGACY_NAME = 'Creator Hub';
+const DATA_FILE = 'creator-hub-data.json'; // internal file name, kept so nothing has to be renamed
+function migrateLegacyData() {
+  try {
+    const oldDir = path.join(app.getPath('appData'), LEGACY_NAME);
+    const newDir = app.getPath('userData');
+    if (path.resolve(oldDir) === path.resolve(newDir)) return false;
+    if (!fs.existsSync(path.join(oldDir, DATA_FILE)) || fs.existsSync(path.join(newDir, DATA_FILE))) return false;
+    const skip = /^(Singleton.*|.*Cache.*|Crashpad|blob_storage|logs|DawnGraphiteCache|DawnWebGPUCache)$/i;
+    fs.cpSync(oldDir, newDir, { recursive: true, force: false, errorOnExist: false, filter: src => !skip.test(path.basename(src)) });
+    fs.writeFileSync(path.join(newDir, '.migrated-from-creator-hub'), new Date().toISOString());
+    return true;
+  } catch (e) { console.error('Could not copy Creator Hub data:', e); return false; }
+}
+const migratedFromLegacy = migrateLegacyData();
+
 if (!app.requestSingleInstanceLock()) { app.quit(); process.exit(0); }
 
 let win, tray, store, engine, license, insights, quitting = false, blockerId = null, updateInfo = null;
 
 // ---- at-rest encryption: OS keychain (macOS Keychain / Windows DPAPI) via safeStorage ----
-// macOS asks for the login password whenever an app's signature changes, and until Creator Hub is
+// macOS asks for the login password whenever an app's signature changes, and until Spektly is
 // signed with an Apple Developer ID every update has a new ad-hoc signature. So on macOS sign-ins are
 // encrypted with the device-bound key below instead of the Keychain (no prompts). Set
 // "macKeychain": true in package.json once builds are Developer ID signed. Windows (DPAPI) never prompts.
@@ -64,7 +83,7 @@ function notify(evt, data) {
   if (evt === 'changed') win?.webContents.send('state-changed');
   if (evt === 'toast') {
     win?.webContents.send('toast', data);
-    if (Notification.isSupported() && (!win || !win.isVisible())) new Notification({ title: 'Creator Hub', body: data }).show();
+    if (Notification.isSupported() && (!win || !win.isVisible())) new Notification({ title: 'Spektly', body: data }).show();
   }
 }
 
@@ -73,8 +92,8 @@ function iconPath() { return path.join(__dirname, 'assets', 'icon.png'); }
 function createWindow() {
   win = new BrowserWindow({
     width: 1280, height: 820, minWidth: 980, minHeight: 640,
-    title: 'Creator Hub', icon: iconPath(), show: false,
-    backgroundColor: '#0f1115',
+    title: 'Spektly', icon: iconPath(), show: false,
+    backgroundColor: '#0b1624',
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true }
   });
   win.removeMenu?.();
@@ -104,11 +123,14 @@ function startEngine() {
 
 function createTray() {
   try {
-    const img = nativeImage.createFromPath(iconPath()).resize({ width: 18, height: 18 });
+    // macOS menu bar: a template image (black + transparent) so it adapts to light and dark menu bars.
+    const img = process.platform === 'darwin'
+      ? (() => { const t = nativeImage.createFromPath(path.join(__dirname, 'assets', 'trayTemplate.png')); t.setTemplateImage(true); return t; })()
+      : nativeImage.createFromPath(path.join(__dirname, 'assets', 'tray.png'));
     tray = new Tray(img);
-    tray.setToolTip('Creator Hub: scheduler running');
+    tray.setToolTip('Spektly: scheduler running');
     tray.setContextMenu(Menu.buildFromTemplate([
-      { label: 'Open Creator Hub', click: () => { win.show(); win.focus(); } },
+      { label: 'Open Spektly', click: () => { win.show(); win.focus(); } },
       { type: 'separator' },
       { label: 'Quit (stops scheduled posting)', click: () => { quitting = true; app.quit(); } }
     ]));
@@ -119,7 +141,7 @@ function createTray() {
 // ---------- IPC ----------
 function handle(channel, fn, { licensed = true } = {}) {
   ipcMain.handle(channel, async (_e, ...args) => {
-    if (licensed && !license.status().active) throw new Error('Creator Hub is not activated.');
+    if (licensed && !license.status().active) throw new Error('Spektly is not activated.');
     return fn(...args);
   });
 }
@@ -177,7 +199,7 @@ function registerIpc() {
     return r.canceled ? null : r.filePaths[0];
   });
   handle('batch:import', async () => {
-    const r = await dialog.showOpenDialog(win, { properties: ['openFile'], filters: [{ name: 'Creator Hub batch', extensions: ['json'] }] });
+    const r = await dialog.showOpenDialog(win, { properties: ['openFile'], filters: [{ name: 'Spektly batch', extensions: ['json'] }] });
     if (r.canceled) return null;
     const file = r.filePaths[0];
     const created = engine.importBatch(JSON.parse(fs.readFileSync(file, 'utf8')), path.dirname(file));
@@ -213,7 +235,7 @@ function registerIpc() {
   handle('insights:report', days => insights.report(days));
   handle('insights:refresh', async (days, force) => { await engine.refreshAnalytics().catch(() => {}); return insights.refresh(days, { force }); });
   handle('insights:exportPdf', async (html, suggested) => {
-    const r = await dialog.showSaveDialog(win, { defaultPath: path.join(app.getPath('documents'), suggested || 'Creator Hub report.pdf'), filters: [{ name: 'PDF', extensions: ['pdf'] }] });
+    const r = await dialog.showSaveDialog(win, { defaultPath: path.join(app.getPath('documents'), suggested || 'Spektly report.pdf'), filters: [{ name: 'PDF', extensions: ['pdf'] }] });
     if (r.canceled) return null;
     const off = new BrowserWindow({ show: false, width: 1100, height: 1400, webPreferences: { sandbox: true, javascript: false } });
     try {
@@ -225,7 +247,7 @@ function registerIpc() {
     return r.filePath;
   });
   handle('insights:exportCsv', async (csv, suggested) => {
-    const r = await dialog.showSaveDialog(win, { defaultPath: path.join(app.getPath('documents'), suggested || 'Creator Hub data.csv'), filters: [{ name: 'CSV', extensions: ['csv'] }] });
+    const r = await dialog.showSaveDialog(win, { defaultPath: path.join(app.getPath('documents'), suggested || 'Spektly data.csv'), filters: [{ name: 'CSV', extensions: ['csv'] }] });
     if (r.canceled) return null;
     fs.writeFileSync(r.filePath, csv);
     shell.showItemInFolder(r.filePath);
@@ -236,18 +258,18 @@ function registerIpc() {
 
 // ---------- Installation hygiene: one copy only ----------
 // macOS: offer to move into /Applications on first run (replacing any older copy there),
-// then - once per new version - move every other Creator Hub copy and older installer files to the Trash.
+// then - once per new version - move every other Spektly copy and older installer files to the Trash.
 async function ensureSingleInstall() {
   if (!app.isPackaged) return false;
   if (process.platform === 'darwin' && !app.isInApplicationsFolder()) {
     const { response } = await dialog.showMessageBox({
       type: 'question', buttons: ['Move to Applications', 'Not now'], defaultId: 0, cancelId: 1,
-      message: 'Move Creator Hub to your Applications folder?',
-      detail: 'This keeps one copy of Creator Hub installed and replaces any older version. Your license, posts and settings are kept.'
+      message: 'Move Spektly to your Applications folder?',
+      detail: 'This keeps one copy of Spektly installed and replaces any older version. Your license, posts and settings are kept.'
     });
     if (response === 0) {
       try { if (app.moveToApplicationsFolder({ conflictHandler: () => true })) return true; } // app relaunches from /Applications
-      catch (e) { dialog.showErrorBox('Could not move Creator Hub', e.message); }
+      catch (e) { dialog.showErrorBox('Could not move Spektly', e.message); }
     }
   }
   return false;
@@ -274,7 +296,27 @@ async function cleanupOldCopies() {
   meta.knownPaths = meta.knownPaths.filter(p => p === current || fs.existsSync(p));
   meta.cleanedFor = pkg.version;
   store.save();
-  if (removed.length) notify('toast', `Removed ${removed.length} old Creator Hub file${removed.length > 1 ? 's' : ''} (moved to Trash).`);
+  if (removed.length) notify('toast', `Removed ${removed.length} old file${removed.length > 1 ? 's' : ''} (moved to Trash).`);
+  removeLegacyWindowsInstall();
+}
+
+// Windows: Spektly installs as a new program, so quietly uninstall the old "Creator Hub" program.
+// Its data was already copied over and its uninstaller keeps app data (deleteAppDataOnUninstall: false).
+function removeLegacyWindowsInstall() {
+  if (process.platform !== 'win32') return;
+  const meta = store.data.install ||= {};
+  if (meta.legacyRemoved) return;
+  const base = process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'Programs') : null;
+  const candidates = [base && path.join(base, 'creator-hub', 'Uninstall Creator Hub.exe'),
+    process.env.ProgramFiles && path.join(process.env.ProgramFiles, 'Creator Hub', 'Uninstall Creator Hub.exe')].filter(Boolean);
+  const uninstaller = candidates.find(p => fs.existsSync(p));
+  meta.legacyRemoved = true;
+  store.save();
+  if (!uninstaller) return;
+  try {
+    require('child_process').spawn(uninstaller, ['/S'], { detached: true, stdio: 'ignore' }).unref();
+    store.addLog('info', 'Removed the old Creator Hub program (your data was copied to Spektly first).');
+  } catch (e) { store.addLog('warn', 'Could not remove the old Creator Hub program: ' + e.message); }
 }
 
 // One-time move of values older versions kept in the macOS Keychain to device encryption,
@@ -301,6 +343,10 @@ app.whenReady().then(async () => {
   if (await ensureSingleInstall()) return; // relaunching from /Applications
   const dir = app.getPath('userData');
   store = new Store(dir);
+  if (migratedFromLegacy) {
+    store.addLog('info', 'Welcome to Spektly. Your posts, accounts, license and settings were carried over from Creator Hub.');
+    if (!store.data.settings.theme || store.data.settings.theme === 'midnight') store.updateSettings({ theme: 'spektly' });
+  }
   const box = makeBox();
   license = new LicenseManager({ dir, box: fallback, legacyBox: box });
   migrateKeychainValues(box);

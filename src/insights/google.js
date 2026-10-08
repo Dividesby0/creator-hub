@@ -64,7 +64,7 @@ class GoogleInsights {
       method: 'POST',
       body: toForm({ client_id: clientId, client_secret: clientSecret, code, code_verifier: verifier, grant_type: 'authorization_code', redirect_uri: redirectUri })
     });
-    if (!body.refresh_token) throw new Error('Google did not return a refresh token. Remove Creator Hub from your Google account permissions and connect again.');
+    if (!body.refresh_token) throw new Error('Google did not return a refresh token. Remove Spektly from your Google account permissions and connect again.');
     let email = '';
     try { email = JSON.parse(Buffer.from(body.id_token.split('.')[1], 'base64url')).email || ''; } catch (_) {}
     const secret = { accessToken: body.access_token, refreshToken: body.refresh_token, expiresAt: Date.now() + body.expires_in * 1000, scope: body.scope, email };

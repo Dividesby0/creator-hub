@@ -2,21 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'none'">
-  <title>Activate Creator Hub</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'none'">
+  <title>Activate Spektly</title>
+  <link rel="icon" href="brand/favicon.png">
   <link rel="stylesheet" href="styles.css">
   <script src="ui.js"></script>
 </head>
 <body class="fx-on">
   <canvas id="bgfx"></canvas>
   <main style="max-width:760px;margin:0 auto;position:relative;z-index:1">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><span id="licMark"></span><span style="font-family:var(--display);font-size:22px;font-weight:700;letter-spacing:-0.02em">Creator Hub</span></div>
-    <div class="header"><div><h1>Activate Creator Hub</h1><div class="muted">Enter your license key to get started.</div></div></div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><span id="licMark"></span><span style="font-family:var(--display);font-size:22px;font-weight:700;letter-spacing:-0.02em">spektly</span></div>
+    <div class="header"><div><h1>Activate Spektly</h1><div class="muted">Enter your license key to get started.</div></div></div>
     <div id="err"></div>
     <div class="card" style="margin-bottom:14px">
       <h2>1. License Agreement</h2>
       <div class="eula" id="eula">Loading…</div>
-      <label class="check" style="margin-top:12px"><input type="checkbox" id="accept"> I have read and accept the Creator Hub End User License Agreement.</label>
+      <label class="check" style="margin-top:12px"><input type="checkbox" id="accept"> I have read and accept the Spektly End User License Agreement.</label>
     </div>
     <div class="card" style="margin-bottom:14px">
       <h2>2. License key</h2>

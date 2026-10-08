@@ -1,6 +1,6 @@
 'use strict';
 const $ = s => document.querySelector(s);
-if (typeof FX !== 'undefined') { $('#licMark').innerHTML = FX.mark('mark'); $('#licMark svg').style.width = '34px'; $('#licMark svg').style.height = '34px'; FX.start($('#bgfx'), { intensity: 0.6 }); }
+if (typeof FX !== 'undefined') { $('#licMark').innerHTML = FX.mark('mark'); $('#licMark img').style.width = '34px'; $('#licMark img').style.height = '34px'; FX.start($('#bgfx'), { intensity: 0.6 }); }
 const clean = m => String(m?.message || m).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 const showErr = m => { $('#err').innerHTML = ''; if (m) { const d = document.createElement('div'); d.className = 'note'; d.textContent = m; $('#err').appendChild(d); window.scrollTo(0, 0); } };
 const needEula = () => { if (!$('#accept').checked) { showErr('Please read and accept the License Agreement first.'); return false; } return true; };

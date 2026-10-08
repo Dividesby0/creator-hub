@@ -45,6 +45,8 @@ const Modal = (() => {
 
 const Theme = (() => {
   const LIST = [
+    { id: 'spektly', name: 'Spektly', bg: '#0e1b2b', a: '#6d92bd', b: '#c9d8ea' },
+    { id: 'ivory', name: 'Ivory', bg: '#f7f4ee', a: '#4f74a0', b: '#0e1b2b' },
     { id: 'midnight', name: 'Midnight', bg: '#0a0e1c', a: '#7b6cff', b: '#2fd4f0' },
     { id: 'aurora', name: 'Aurora', bg: '#061a1a', a: '#45e0b4', b: '#b99cff' },
     { id: 'ultraviolet', name: 'Ultraviolet', bg: '#12081f', a: '#ff4fc8', b: '#8f7bff' },
@@ -52,12 +54,12 @@ const Theme = (() => {
     { id: 'daylight', name: 'Daylight', bg: '#eef1f7', a: '#2f5bff', b: '#00a3c4' }
   ];
   function apply(id) {
-    if (!LIST.some(t => t.id === id)) id = 'midnight';
+    if (!LIST.some(t => t.id === id)) id = 'spektly';
     document.documentElement.dataset.theme = id;
     try { localStorage.setItem('ch-theme', id); } catch (_) {}
     return id;
   }
-  function boot() { let id = 'midnight'; try { id = localStorage.getItem('ch-theme') || id; } catch (_) {} apply(id); }
+  function boot() { let id = 'spektly'; try { id = localStorage.getItem('ch-theme') || id; } catch (_) {} apply(id); }
   const picker = current => `<div class="themes">${LIST.map(t => `<button class="theme-sw ${t.id === current ? 'on' : ''}" data-theme-pick="${t.id}" aria-label="${t.name} theme">
       <div class="pv" style="background:${t.bg}"><s style="background:${t.b}"></s><b style="background:${t.a}"></b></div><div class="nm">${t.name}</div></button>`).join('')}</div>`;
   return { LIST, apply, boot, picker };

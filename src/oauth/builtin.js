@@ -1,5 +1,5 @@
 'use strict';
-// Creator Hub's own ("built-in") OAuth apps, so customers just click Connect and sign in.
+// Spektly's own ("built-in") OAuth apps, so customers just click Connect and sign in.
 // builtin.json is written at build time from CI secrets (never committed). For local dev, set
 // CH_GOOGLE_CLIENT_ID / CH_GOOGLE_CLIENT_SECRET. Installed-app client secrets are not treated as
 // confidential by Google (PKCE protects the flow); the user's tokens never leave their computer.

@@ -1,4 +1,4 @@
-# Creator Hub — Editions, Pricing & Licensing Policy
+# Spektly — Editions, Pricing & Licensing Policy
 
 *Draft for launch. Prices are recommendations; adjust after your first 50–100 sales.*
 
@@ -11,7 +11,7 @@ Hosted schedulers bill every month, forever:
 - Later: from about $18.75/month.
 - Hootsuite and Sprout Social: $79–$99+ per user per month.
 
-Creator Hub is **local-first**. You have no servers to pay for per customer, so you can undercut them hard with a **one-time price**. That is a clear marketing hook: *"Pay once. Own it. Your keys, your data, your computer."*
+Spektly is **local-first**. You have no servers to pay for per customer, so you can undercut them hard with a **one-time price**. That is a clear marketing hook: *"Pay once. Own it. Your keys, your data, your computer."*
 
 The trade-off buyers accept: they set up their own platform developer apps, and the app posts only while their computer is on. The price should reflect that friction.
 

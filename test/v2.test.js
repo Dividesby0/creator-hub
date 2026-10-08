@@ -24,24 +24,35 @@ function fakeApp(dir, name, bundleId, version) {
 // ---------------- cleanup ----------------
 test('cleanup finds old copies by bundle id, keeps the running app and unrelated apps', async () => {
   const apps = tmp(), downloads = tmp(), desktop = tmp();
-  const current = fakeApp(apps, 'Creator Hub.app', 'com.creatorhub.desktop', '2.0.0');
-  const dl = fakeApp(downloads, 'Creator Hub.app', 'com.creatorhub.desktop', '1.0.0');
-  const dup = fakeApp(apps, 'Creator Hub 2.app', 'com.creatorhub.desktop', '1.0.2');
-  fakeApp(desktop, 'Creator Hub Pro.app', 'com.someoneelse.app', '9.9.9'); // different app, same-ish name
-  fs.writeFileSync(path.join(downloads, 'Creator.Hub-1.0.2-arm64.dmg'), 'x');
-  fs.writeFileSync(path.join(downloads, 'Creator.Hub-2.0.0-arm64.dmg'), 'x');   // current installer: keep
-  fs.writeFileSync(path.join(downloads, 'Creator.Hub.Setup.1.0.1.exe'), 'x');
-  fs.writeFileSync(path.join(downloads, 'creator-hub-notes.txt'), 'x');
+  const current = fakeApp(apps, 'Spektly.app', 'com.spektly.desktop', '2.3.0');
+  const dl = fakeApp(downloads, 'Spektly.app', 'com.spektly.desktop', '2.3.0');
+  const dup = fakeApp(apps, 'Spektly 2.app', 'com.spektly.desktop', '2.2.9');
+  fakeApp(desktop, 'Spektly Pro.app', 'com.someoneelse.app', '9.9.9'); // different app, same-ish name
+  fs.writeFileSync(path.join(downloads, 'Spektly-2.2.9-arm64.dmg'), 'x');
+  fs.writeFileSync(path.join(downloads, 'Spektly-2.3.0-arm64.dmg'), 'x');   // current installer: keep
+  fs.writeFileSync(path.join(downloads, 'Spektly Setup 2.2.8.exe'), 'x');
+  fs.writeFileSync(path.join(downloads, 'spektly-notes.txt'), 'x');
 
   const trashed = [];
   const r = await cleanupMod.cleanup({
-    currentAppPath: current, currentVersion: '2.0.0', dirs: [apps, downloads, desktop], knownPaths: [dl],
+    currentAppPath: current, currentVersion: '2.3.0', dirs: [apps, downloads, desktop], knownPaths: [dl],
     trash: async p => { trashed.push(p); }
   });
-  assert.deepStrictEqual(trashed.sort(), [dl, dup, path.join(downloads, 'Creator.Hub-1.0.2-arm64.dmg'), path.join(downloads, 'Creator.Hub.Setup.1.0.1.exe')].sort());
+  assert.deepStrictEqual(trashed.sort(), [dl, dup, path.join(downloads, 'Spektly-2.2.9-arm64.dmg'), path.join(downloads, 'Spektly Setup 2.2.8.exe')].sort());
   assert.ok(!trashed.includes(current), 'never trashes the running app');
   assert.strictEqual(r.removed.length, 4);
   assert.strictEqual(r.failed.length, 0);
+});
+
+test('after the rename, every Creator Hub copy and installer is stale, whatever its version', async () => {
+  const apps = tmp(), downloads = tmp();
+  const current = fakeApp(apps, 'Spektly.app', 'com.spektly.desktop', '2.3.0');
+  const legacy = fakeApp(apps, 'Creator Hub.app', 'com.creatorhub.desktop', '2.2.3');
+  fakeApp(apps, 'Creator Hub Pro.app', 'com.someoneelse.app', '9.9.9');
+  for (const f of ['Creator.Hub-2.2.3-arm64.dmg', 'Creator Hub-9.0.0.dmg', 'Creator.Hub.Setup.2.2.3.exe']) fs.writeFileSync(path.join(downloads, f), 'x');
+  const { apps: a, installers } = cleanupMod.findStale({ currentAppPath: current, currentVersion: '2.3.0', dirs: [apps, downloads] });
+  assert.deepStrictEqual(a.map(x => x.path), [legacy]);
+  assert.strictEqual(installers.length, 3);
 });
 
 test('cleanup ignores mounted disk images and unreadable folders, reports failures', async () => {

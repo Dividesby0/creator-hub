@@ -23,7 +23,7 @@ const DEFAULT_DATA = {
     analyticsIntervalHours: 6,
     maxAttempts: 3,
     onboarded: false,             // first-run setup wizard completed or skipped
-    theme: 'midnight'             // midnight | aurora | ultraviolet | ember | daylight
+    theme: 'spektly'              // spektly | ivory | midnight | aurora | ultraviolet | ember | daylight
   },
   log: []
 };

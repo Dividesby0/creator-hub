@@ -1,12 +1,12 @@
-# Creator Hub Privacy Policy
+# Spektly Privacy Policy
 
-**Effective:** [EFFECTIVE DATE] · **Publisher:** [COMPANY LEGAL NAME] ("we", "us") · **Contact:** decrypt443@gmail.com
+**Effective:** [EFFECTIVE DATE] · **Publisher:** [COMPANY LEGAL NAME] ("we", "us") · **Contact:** info@spektly.com
 
-Creator Hub is a desktop app for Mac and Windows that helps creators schedule, approve and publish posts and see their analytics in one place. It is **local-first**: your content, your platform sign-ins and your analytics stay on your computer. We do not run servers that receive them.
+Spektly is a desktop app for Mac and Windows that helps creators schedule, approve and publish posts and see their analytics in one place. It is **local-first**: your content, your platform sign-ins and your analytics stay on your computer. We do not run servers that receive them.
 
-## 1. What Creator Hub accesses and why
+## 1. What Spektly accesses and why
 
-When you connect an account, you sign in on that platform's own website and approve specific permissions. Creator Hub then uses those permissions **only to provide features you see in the app**:
+When you connect an account, you sign in on that platform's own website and approve specific permissions. Spektly then uses those permissions **only to provide features you see in the app**:
 
 | You connect | Permissions requested | Used for |
 |---|---|---|
@@ -18,7 +18,7 @@ When you connect an account, you sign in on that platform's own website and appr
 | Your email address (OpenID) | Basic profile email | Showing which Google account is connected |
 | TikTok, Instagram, Threads, Facebook, X | Publishing and basic insights permissions shown at sign-in | Publishing your scheduled posts and showing their stats |
 
-Creator Hub **never** changes your Analytics, Search Console or Business Profile data, never posts anything you have not created or approved in the app, and never reads your private messages.
+Spektly **never** changes your Analytics, Search Console or Business Profile data, never posts anything you have not created or approved in the app, and never reads your private messages.
 
 ## 2. Where your data is stored
 
@@ -32,7 +32,7 @@ To enforce licensing, activation sends us your **license serial number**, a **on
 
 ## 4. Google API Services User Data Policy (Limited Use)
 
-Creator Hub's use and transfer of information received from Google APIs to any other app will adhere to the [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy), including the Limited Use requirements. Specifically:
+Spektly's use and transfer of information received from Google APIs to any other app will adhere to the [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy), including the Limited Use requirements. Specifically:
 
 - Google user data is used only to provide or improve the user-facing features described above.
 - It is not transferred to anyone except as necessary to provide those features, to comply with law, or as part of a merger or acquisition with notice to you.
@@ -42,13 +42,13 @@ Creator Hub's use and transfer of information received from Google APIs to any o
 
 ## 5. Your choices
 
-- **Disconnect** any account in Creator Hub → Accounts, which deletes its stored tokens from your computer.
+- **Disconnect** any account in Spektly → Accounts, which deletes its stored tokens from your computer.
 - **Revoke access** at any time from the platform itself (Google: [myaccount.google.com/permissions](https://myaccount.google.com/permissions)).
-- **Delete everything** by uninstalling Creator Hub and deleting its data folder (Mac: `~/Library/Application Support/Creator Hub`; Windows: `%APPDATA%\Creator Hub`).
+- **Delete everything** by uninstalling Spektly and deleting its data folder (Mac: `~/Library/Application Support/Spektly`; Windows: `%APPDATA%\Spektly`).
 
 ## 6. Children
 
-Creator Hub is not directed to children under 13 (or the minimum age in your country) and we do not knowingly collect their information.
+Spektly is not directed to children under 13 (or the minimum age in your country) and we do not knowingly collect their information.
 
 ## 7. Changes
 
@@ -56,4 +56,4 @@ If we change this policy we will update the effective date above and, for materi
 
 ## 8. Contact
 
-Questions or requests: **decrypt443@gmail.com**
+Questions or requests: **info@spektly.com**

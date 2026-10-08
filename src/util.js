@@ -68,12 +68,12 @@ function loopbackSignIn(opts) {
       const code = u.searchParams.get('code');
       const gotState = u.searchParams.get('state');
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', Connection: 'close' });
-      const page = (title, msg, ok) => `<!doctype html><meta charset="utf-8"><title>Creator Hub</title><body style="margin:0;height:100vh;display:grid;place-items:center;background:#0b0d12;color:#e9ecf2;font:16px -apple-system,Segoe UI,sans-serif"><div style="text-align:center"><div style="font-size:44px">${ok ? '&#10003;' : '&#9888;'}</div><h2 style="margin:8px 0">${title}</h2><p style="color:#9aa3b2">${msg}</p></div></body>`;
+      const page = (title, msg, ok) => `<!doctype html><meta charset="utf-8"><title>Spektly</title><body style="margin:0;height:100vh;display:grid;place-items:center;background:#0b0d12;color:#e9ecf2;font:16px -apple-system,Segoe UI,sans-serif"><div style="text-align:center"><div style="font-size:44px">${ok ? '&#10003;' : '&#9888;'}</div><h2 style="margin:8px 0">${title}</h2><p style="color:#9aa3b2">${msg}</p></div></body>`;
       if (err || !code || gotState !== opts.state) {
-        res.end(page('Connection failed', 'You can close this tab and try again in Creator Hub.', false));
+        res.end(page('Connection failed', 'You can close this tab and try again in Spektly.', false));
         finish(new Error(err ? `Sign-in was not completed (${err}${u.searchParams.get('error_description') ? ': ' + u.searchParams.get('error_description') : ''}).` : 'Sign-in response did not match. Please try again.'));
       } else {
-        res.end(page('You are connected', 'You can close this tab and go back to Creator Hub.', true));
+        res.end(page('You are connected', 'You can close this tab and go back to Spektly.', true));
         finish(null, code);
       }
     });
@@ -89,7 +89,7 @@ function loopbackSignIn(opts) {
     }
     activeLogin = finish;
     server.on('error', e => finish(new Error(e.code === 'EADDRINUSE'
-      ? 'Another app is using the sign-in port. Close other Creator Hub windows and try again.'
+      ? 'Another app is using the sign-in port. Close other Spektly windows and try again.'
       : `Could not start sign-in: ${e.message}`)));
     server.listen(port, '127.0.0.1', () => {
       redirectUri = `http://127.0.0.1:${server.address().port}/callback/`;

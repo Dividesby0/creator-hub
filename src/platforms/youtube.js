@@ -54,7 +54,7 @@ module.exports = {
 
   async connect(ctx) {
     const c = googleClient({ own: ctx.account.config });
-    if (!c) throw new Error('This copy of Creator Hub has no built-in Google sign-in. Open "Use my own developer keys" and enter a Google OAuth Client ID and Secret.');
+    if (!c) throw new Error('This copy of Spektly has no built-in Google sign-in. Open "Use my own developer keys" and enter a Google OAuth Client ID and Secret.');
     const verifier = randomVerifier();
     const state = crypto.randomUUID();
     // Google desktop clients accept any loopback port, so use a free one (never "port in use").
@@ -71,7 +71,7 @@ module.exports = {
       body: toForm({ client_id: c.clientId, client_secret: c.clientSecret, code, code_verifier: verifier,
         grant_type: 'authorization_code', redirect_uri: redirectUri })
     });
-    if (!body.refresh_token) throw new Error('Google did not return a refresh token. Remove Creator Hub at myaccount.google.com/permissions, then connect again.');
+    if (!body.refresh_token) throw new Error('Google did not return a refresh token. Remove Spektly at myaccount.google.com/permissions, then connect again.');
     let email = '';
     try { email = JSON.parse(Buffer.from(body.id_token.split('.')[1], 'base64url')).email || ''; } catch (_) {}
     const secret = { accessToken: body.access_token, refreshToken: body.refresh_token, expiresAt: Date.now() + body.expires_in * 1000,

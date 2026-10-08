@@ -1,12 +1,14 @@
 'use strict';
-// Finds and removes stale copies of Creator Hub so only the installed version remains.
+// Finds and removes stale copies of Spektly (and of Creator Hub, its old name) so only the installed version remains.
 // Pure logic with injected fs/trash so it can be unit-tested on any OS.
 const nodeFs = require('fs');
 const path = require('path');
 
-const BUNDLE_ID = 'com.creatorhub.desktop';
-const APP_NAME_RE = /^creator hub.*\.app$/i;
-const INSTALLER_RE = /^creator[ .]hub[- .](?:setup[ .])?(\d+\.\d+\.\d+)(?:-[a-z0-9]+)?\.(dmg|zip|exe)$/i;
+const BUNDLE_ID = 'com.spektly.desktop';
+// Before the rename the app was "Creator Hub". Any copy of it is always stale.
+const LEGACY_BUNDLE_IDS = ['com.creatorhub.desktop'];
+const APP_NAME_RE = /^(?:spektly|creator hub).*\.app$/i;
+const INSTALLER_RE = /^(spektly|creator[ .]hub)[- .](?:setup[ .])?(\d+\.\d+\.\d+)(?:-[a-z0-9]+)?\.(dmg|zip|exe)$/i;
 
 function cmpVersion(a, b) {
   const pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number);
@@ -22,7 +24,7 @@ function readBundleInfo(appPath, fs = nodeFs) {
   } catch (_) { return null; }
 }
 
-// The .app bundle that contains the running executable (macOS), e.g. /Applications/Creator Hub.app
+// The .app bundle that contains the running executable (macOS), e.g. /Applications/Spektly.app
 function appBundleOf(exePath) {
   const i = exePath.indexOf('.app/Contents/');
   return i < 0 ? null : exePath.slice(0, i + 4);
@@ -31,7 +33,7 @@ function appBundleOf(exePath) {
 /**
  * @returns {{ apps: {path, version}[], installers: {path, version}[] }}
  */
-function findStale({ currentAppPath, currentVersion, dirs, knownPaths = [], fs = nodeFs, bundleId = BUNDLE_ID }) {
+function findStale({ currentAppPath, currentVersion, dirs, knownPaths = [], fs = nodeFs, bundleId = BUNDLE_ID, legacyBundleIds = LEGACY_BUNDLE_IDS }) {
   const current = currentAppPath ? path.resolve(currentAppPath) : null;
   const seen = new Set();
   const apps = [], installers = [];
@@ -41,7 +43,7 @@ function findStale({ currentAppPath, currentVersion, dirs, knownPaths = [], fs =
     if (seen.has(abs) || abs === current || abs.startsWith('/Volumes/')) return;
     seen.add(abs);
     const info = readBundleInfo(abs, fs);
-    if (info && info.bundleId === bundleId) apps.push({ path: abs, version: info.version });
+    if (info && (info.bundleId === bundleId || legacyBundleIds.includes(info.bundleId))) apps.push({ path: abs, version: info.version });
   };
 
   for (const p of knownPaths) if (p && fs.existsSync(p)) consider(p);
@@ -52,7 +54,8 @@ function findStale({ currentAppPath, currentVersion, dirs, knownPaths = [], fs =
       const full = path.join(dir, name);
       if (APP_NAME_RE.test(name)) consider(full);
       const m = name.match(INSTALLER_RE);
-      if (m && currentVersion && cmpVersion(m[1], currentVersion) < 0) installers.push({ path: full, version: m[1] });
+      const legacy = m && !/^spektly$/i.test(m[1]);
+      if (m && (legacy || (currentVersion && cmpVersion(m[2], currentVersion) < 0))) installers.push({ path: full, version: m[2] });
     }
   }
   return { apps, installers };
@@ -72,4 +75,4 @@ async function cleanup(opts) {
   return { removed, failed };
 }
 
-module.exports = { BUNDLE_ID, cmpVersion, readBundleInfo, appBundleOf, findStale, cleanup, INSTALLER_RE };
+module.exports = { BUNDLE_ID, LEGACY_BUNDLE_IDS, cmpVersion, readBundleInfo, appBundleOf, findStale, cleanup, INSTALLER_RE };

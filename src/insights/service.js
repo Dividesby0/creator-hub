@@ -25,7 +25,7 @@ class InsightsService {
   _dec(str) { if (!str) return {}; try { return JSON.parse(this.box.decrypt(str)); } catch (_) { return {}; } }
 
   // Which Google client to use: the one that issued our token, else the user's own Insights keys,
-  // else their YouTube keys, else Creator Hub's built-in app (customers never type keys).
+  // else their YouTube keys, else Spektly's built-in app (customers never type keys).
   config() {
     const own = { ...this.s.config, ...this._dec(this.s.secretConfig) };
     const yt = this.store.getAccount('youtube');
@@ -95,7 +95,7 @@ class InsightsService {
     this.store.save();
   }
 
-  // ---------- social (from Creator Hub's own snapshots) ----------
+  // ---------- social (from Spektly's own snapshots) ----------
   social(range) {
     const a = this.store.data.analytics || { account: {}, posts: {} };
     const at = (hist, day) => {

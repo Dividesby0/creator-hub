@@ -1,5 +1,5 @@
 'use strict';
-// One-click sign-in for TikTok, Instagram, Threads, Facebook and X using Creator Hub's own
+// One-click sign-in for TikTok, Instagram, Threads, Facebook and X using Spektly's own
 // registered apps. X uses PKCE as a public client (no secret). The others need an app secret for
 // the token exchange, which stays on the sign-in relay (a small Cloudflare Worker); the relay also
 // hosts the https redirect those platforms require and bounces the code back to this computer.

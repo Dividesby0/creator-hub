@@ -1,4 +1,4 @@
-// Creator Hub activation server — Cloudflare Worker + D1 (both on Cloudflare's free tier).
+// Spektly activation server — Cloudflare Worker + D1 (both on Cloudflare's free tier).
 // Enforces seat limits per license and issues device-bound, Ed25519-signed activations.
 //
 // Secrets (wrangler secret put ...):
@@ -52,7 +52,7 @@ async function keys(env) {
 
 async function parseLicense(key, env) {
   const s = String(key || '').trim();
-  if (!s.toUpperCase().startsWith('CH1-')) throw new Error('Not a Creator Hub license key.');
+  if (!s.toUpperCase().startsWith('CH1-')) throw new Error('Not a Spektly license key.');
   const buf = b32decode(s.slice(4));
   if (buf.length !== 80) throw new Error('License key is incomplete or mistyped.');
   const payload = buf.slice(0, 16), sig = buf.slice(16);
@@ -150,7 +150,7 @@ function oauthCallback(url, provider) {
   const p = url.searchParams;
   const state = p.get('state') || '';
   const port = Number(state.split('.')[0]);
-  if (!Number.isInteger(port) || port < 1024 || port > 65535) return new Response('Invalid sign-in state. Go back to Creator Hub and click Connect again.', { status: 400 });
+  if (!Number.isInteger(port) || port < 1024 || port > 65535) return new Response('Invalid sign-in state. Go back to Spektly and click Connect again.', { status: 400 });
   const fwd = new URLSearchParams({ state });
   for (const k of ['code', 'error', 'error_description']) if (p.get(k)) fwd.set(k, p.get(k));
   // Only ever redirect to this computer's loopback address.

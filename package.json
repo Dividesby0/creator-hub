@@ -1,7 +1,7 @@
 {
-  "name": "creator-hub",
-  "productName": "Creator Hub",
-  "version": "2.2.3",
+  "name": "spektly",
+  "productName": "Spektly",
+  "version": "2.3.0",
   "description": "Local-first scheduler, approval queue, publisher and analytics for YouTube, TikTok, Instagram, Threads, Facebook and X.",
   "main": "main.js",
   "license": "UNLICENSED",
@@ -21,8 +21,8 @@
     "electron-builder": "^26.0.0"
   },
   "build": {
-    "appId": "com.creatorhub.desktop",
-    "productName": "Creator Hub",
+    "appId": "com.spektly.desktop",
+    "productName": "Spektly",
     "files": [
       "main.js",
       "preload.js",
@@ -36,20 +36,20 @@
         "dmg"
       ],
       "category": "public.app-category.productivity",
-      "icon": "assets/icon.png",
+      "icon": "assets/icon.icns",
       "identity": "-",
       "hardenedRuntime": false,
       "gatekeeperAssess": false,
       "extendInfo": {
-        "NSDownloadsFolderUsageDescription": "Creator Hub removes older copies of itself and old installer files so only the current version stays installed.",
-        "NSDesktopFolderUsageDescription": "Creator Hub removes older copies of itself and old installer files so only the current version stays installed."
+        "NSDownloadsFolderUsageDescription": "Spektly removes older copies of itself and old installer files so only the current version stays installed.",
+        "NSDesktopFolderUsageDescription": "Spektly removes older copies of itself and old installer files so only the current version stays installed."
       }
     },
     "win": {
       "target": [
         "nsis"
       ],
-      "icon": "assets/icon.png"
+      "icon": "assets/icon.ico"
     },
     "nsis": {
       "oneClick": false,
@@ -58,8 +58,8 @@
       "deleteAppDataOnUninstall": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Creator Hub",
-      "uninstallDisplayName": "Creator Hub"
+      "shortcutName": "Spektly",
+      "uninstallDisplayName": "Spektly"
     },
     "electronFuses": {
       "runAsNode": false,

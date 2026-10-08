@@ -1,6 +1,6 @@
 'use strict';
 /*
- * Creator Hub licensing core.
+ * Spektly licensing core.
  *
  * License key  = Crockford-base32( payload(16 bytes) || Ed25519-signature(64 bytes) ), grouped, prefixed "CH1-".
  *                Signed with the vendor LICENSE private key (never shipped). Verifiable offline with the embedded public key.
@@ -91,7 +91,7 @@ function signLicense(fields, privateKey) {
 
 function parseLicense(key, publicKey, now = Date.now()) {
   const trimmed = String(key || '').trim();
-  if (!trimmed.toUpperCase().startsWith(KEY_PREFIX + '-')) throw new Error('This is not a Creator Hub license key.');
+  if (!trimmed.toUpperCase().startsWith(KEY_PREFIX + '-')) throw new Error('This is not a Spektly license key.');
   const buf = b32decode(trimmed.slice(KEY_PREFIX.length + 1));
   if (buf.length !== 80) throw new Error('License key is incomplete or mistyped.');
   const payload = buf.subarray(0, 16), sig = buf.subarray(16, 80);

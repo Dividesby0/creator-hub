@@ -5,7 +5,7 @@ const { cmpVersion } = require('./cleanup');
 async function checkForUpdate({ feedUrl, currentVersion, platform = process.platform, arch = process.arch, fetchImpl = globalThis.fetch }) {
   if (!feedUrl) return null;
   try {
-    const res = await fetchImpl(feedUrl, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'CreatorHub' } });
+    const res = await fetchImpl(feedUrl, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'Spektly' } });
     if (!res.ok) return null;
     const rel = await res.json();
     const latest = String(rel.tag_name || '').replace(/^v/, '');

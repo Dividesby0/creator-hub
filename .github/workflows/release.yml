@@ -21,7 +21,7 @@ jobs:
         with: { node-version: 22 }
       - run: npm ci || npm install
       - run: npm test
-      - name: Add Creator Hub's built-in sign-in (from repository secrets; never committed)
+      - name: Add Spektly's built-in sign-in (from repository secrets; never committed)
         shell: bash
         env:
           G_SECRET: ${{ secrets.CH_GOOGLE_CLIENT_SECRET }}
@@ -40,13 +40,13 @@ jobs:
           for dmg in dist/*.dmg; do
             mnt=$(mktemp -d)
             hdiutil attach "$dmg" -nobrowse -readonly -mountpoint "$mnt" >/dev/null
-            codesign --verify --deep --strict --verbose=2 "$mnt/Creator Hub.app"
+            codesign --verify --deep --strict --verbose=2 "$mnt/Spektly.app"
             hdiutil detach "$mnt" >/dev/null
           done
           # Launch smoke test of the native-arch build: app must stay alive for 8s
-          app="dist/mac-arm64/Creator Hub.app"
-          [ -d "$app" ] || app="dist/mac/Creator Hub.app"
-          "$app/Contents/MacOS/Creator Hub" --no-sandbox & pid=$!
+          app="dist/mac-arm64/Spektly.app"
+          [ -d "$app" ] || app="dist/mac/Spektly.app"
+          "$app/Contents/MacOS/Spektly" --no-sandbox & pid=$!
           sleep 8
           if kill -0 $pid 2>/dev/null; then echo "launch OK"; kill $pid; else echo "APP CRASHED ON LAUNCH"; exit 1; fi
       - name: Build (Windows)
@@ -73,6 +73,6 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.v.outputs.version }}
-          name: Creator Hub ${{ steps.v.outputs.version }}
+          name: Spektly ${{ steps.v.outputs.version }}
           files: out/*
           make_latest: true

@@ -29,7 +29,7 @@ test('tampered or foreign keys are rejected', () => {
   assert.throws(() => core.parseLicense(chars.join(''), lic.publicKey), /signature|incomplete/i);
   const forged = core.signLicense({ tier: 5, maxDevices: 999, serial: 5 }, other.privateKey);
   assert.throws(() => core.parseLicense(forged, lic.publicKey), /signature/);
-  assert.throws(() => core.parseLicense('XYZ-123', lic.publicKey), /not a Creator Hub/);
+  assert.throws(() => core.parseLicense('XYZ-123', lic.publicKey), /not a Spektly/);
 });
 
 test('expired subscription keys are rejected', () => {

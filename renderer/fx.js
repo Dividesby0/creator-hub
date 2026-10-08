@@ -1,5 +1,5 @@
 'use strict';
-/* Creator Hub ambient "signal field": flowing broadcast waves drawn on a canvas.
+/* Spektly ambient "signal field": flowing waves drawn on a canvas.
    Used behind the startup screen and the first-run setup. Colors follow the active theme.
    Respects prefers-reduced-motion (draws one still frame). No dependencies. */
 const FX = (() => {
@@ -66,12 +66,9 @@ const FX = (() => {
   }
   function stop(canvas) { const s = runs.get(canvas); if (s) { s(); runs.delete(canvas); } }
 
-  // Brand mark: a broadcast target with an orbiting ring.
+  // Brand mark: the Spektly three-bar emblem (from the official logo kit).
   function mark(cls = 'mark') {
-    return `<svg class="${cls}" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="mk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="var(--accent)"/><stop offset="1" stop-color="var(--accent2)"/></linearGradient></defs>
-      <circle cx="32" cy="32" r="29" fill="none" stroke="url(#mk)" stroke-width="3" stroke-dasharray="132 50" class="ring"/>
-      <circle cx="32" cy="32" r="18" fill="none" stroke="url(#mk)" stroke-width="3" opacity=".75"/>
-      <circle cx="32" cy="32" r="7" fill="url(#mk)"/></svg>`;
+    return `<img class="${cls}" src="brand/emblem.png" alt="" aria-hidden="true" draggable="false">`;
   }
   return { start, stop, mark };
 })();

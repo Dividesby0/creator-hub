@@ -1,4 +1,4 @@
-# Creator Hub
+# Spektly
 
 A local-first desktop app for macOS and Windows. It schedules, approves, publishes, and tracks posts on **YouTube, TikTok, Instagram, Threads, Facebook Pages, and X**, and includes a built-in commercial licensing system.
 
@@ -13,7 +13,7 @@ A local-first desktop app for macOS and Windows. It schedules, approves, publish
 - **AI-content labels.** One checkbox sets YouTube's synthetic-media flag and TikTok's AIGC flag, and can append a disclosure hashtag.
 - **Private by design.** Sign-ins are encrypted on the computer (Windows DPAPI; on macOS a device-bound AES-256-GCM key until builds are Developer ID signed, which avoids Keychain password prompts after every update) and never leave it except to talk to each platform.
 
-> Creator Hub posts only while it is running. Leave "Keep running in the background" and "Start at login" on, and don't let the computer sleep at posting time.
+> Spektly posts only while it is running. Leave "Keep running in the background" and "Start at login" on, and don't let the computer sleep at posting time.
 
 ---
 
@@ -30,8 +30,8 @@ npm test           # 45 automated tests: licensing, scheduler, platform flows, a
 **Build installers.** Mac builds must be made on a Mac, and Windows builds are best made on Windows:
 
 ```bash
-npm run dist:mac   # → dist/Creator Hub-1.0.0.dmg
-npm run dist:win   # → dist/Creator Hub Setup 1.0.0.exe
+npm run dist:mac   # → dist/Spektly-1.0.0.dmg
+npm run dist:win   # → dist/Spektly Setup 1.0.0.exe
 ```
 
 Before you sell, **code-sign** the builds:
@@ -45,7 +45,7 @@ Unsigned apps show scary warnings that hurt sales. electron-builder picks signin
 ## 2. Connect the platforms
 
 ### One-click sign-in (built-in apps), vendor setup, done once by you
-Customers click **Connect** and sign in. That works because each build ships with Creator Hub's own OAuth app credentials, injected by CI from repository secrets (never committed):
+Customers click **Connect** and sign in. That works because each build ships with Spektly's own OAuth app credentials, injected by CI from repository secrets (never committed):
 
 | Secret | Value |
 |---|---|
@@ -56,7 +56,7 @@ Add it in GitHub under **Settings → Secrets and variables → Actions**. The b
 Before the public can sign in, the Google app must leave **Testing**: finish *Branding* (home page, privacy policy, terms URLs, authorized domain), click **Publish app**, and submit for verification (sensitive scopes: YouTube upload/read, Analytics, Search Console, Business Profile). Until then only listed test users can sign in. TikTok, Meta (Instagram, Threads, Facebook) and X still use the advanced own-keys path below until their app reviews are done.
 
 ### Own developer keys (advanced)
-Each platform below can also use a free **developer app** that you own. Creator Hub uses one fixed login redirect for the platforms that need it:
+Each platform below can also use a free **developer app** that you own. Spektly uses one fixed login redirect for the platforms that need it:
 
 ```
 http://127.0.0.1:8765/callback/
@@ -68,7 +68,7 @@ Portals rename menus often. If a label below doesn't match, look for the nearest
 1. In [Google Cloud Console](https://console.cloud.google.com/), create a project and enable **YouTube Data API v3**.
 2. On the **OAuth consent screen**, choose External and add your Google account as a test user. **Publish the app ("In production")**; otherwise Google expires your login every 7 days.
 3. Under **Credentials**, create an OAuth client ID of type **Desktop app**.
-4. In Creator Hub, go to Accounts → YouTube, paste the Client ID and Secret, then click **Save & sign in**.
+4. In Spektly, go to Accounts → YouTube, paste the Client ID and Secret, then click **Save & sign in**.
 5. Limits:
    - Videos uploaded through a new, unaudited API project are locked to **private** until you pass Google's API audit (the "YouTube API Services – Audit and Quota Extension" form).
    - The default quota is about 6 uploads per day.
@@ -77,7 +77,7 @@ Portals rename menus often. If a label below doesn't match, look for the nearest
 1. At [developers.tiktok.com](https://developers.tiktok.com/apps), create an app and add **Login Kit (Desktop)** and the **Content Posting API**.
 2. Register the redirect URI above and request these scopes: `user.info.basic`, `user.info.stats`, `video.upload`, `video.publish`, `video.list`.
 3. While the app is unaudited, add your TikTok account as a sandbox target user.
-4. In Creator Hub, paste the Client key and secret, then choose a mode:
+4. In Spektly, paste the Client key and secret, then choose a mode:
    - **drafts** (default): works before audit. The video lands in your TikTok inbox, and you tap Post in the app. You can have at most 5 pending drafts per day.
    - **direct**: posts automatically, but only as private (SELF_ONLY) until TikTok audits your app.
 
@@ -85,19 +85,19 @@ Portals rename menus often. If a label below doesn't match, look for the nearest
 1. The Instagram account must be a **Professional** (Creator or Business) account.
 2. At [developers.facebook.com](https://developers.facebook.com/apps), create an app and add the **Instagram** product.
 3. Under **API setup with Instagram login**, add your account and **Generate token**. You need the permissions `instagram_business_basic` and `instagram_business_content_publish`.
-4. In Creator Hub, paste the token and leave the account ID blank so it is auto-detected. The app refreshes the 60-day token for you.
+4. In Spektly, paste the token and leave the account ID blank so it is auto-detected. The app refreshes the 60-day token for you.
 5. **Reels** upload straight from your disk. **Single images** must be at a public URL, because Meta downloads them; put that URL in the post's "Public media URL" field.
 
 ### Threads
 1. In the same Meta developer app (or a new one), add the **Threads API** use case with `threads_basic`, `threads_content_publish`, and `threads_manage_insights`.
 2. Add your Threads account as a **tester** and accept the invite in the Threads app under Settings → Account → Website permissions.
-3. Generate a **long-lived** user token and paste it into Creator Hub, which refreshes it automatically.
+3. Generate a **long-lived** user token and paste it into Spektly, which refreshes it automatically.
 4. Text posts work directly. Images and video must be at a public URL.
 
 ### Facebook Page
 1. In **Graph API Explorer**, get a User token with these permissions: `pages_show_list`, `pages_manage_posts`, `pages_read_engagement`, `read_insights`.
 2. Exchange it for a long-lived token, then call `GET /me/accounts`. Copy your Page's **access_token** and **id**; long-lived Page tokens don't expire.
-3. Paste both into Creator Hub. Videos and photos upload straight from disk.
+3. Paste both into Spektly. Videos and photos upload straight from disk.
 
 ### X
 1. In the [X developer portal](https://developer.x.com/en/portal/dashboard), open your app and go to **User authentication settings**:
@@ -105,7 +105,7 @@ Portals rename menus often. If a label below doesn't match, look for the nearest
    - Set permissions to **Read and write**.
    - Add the callback URI above.
 2. X API access is **pay-per-use** (about $0.015 per post, $0.20 if the post contains a link). Load credits in the developer console.
-3. In Creator Hub, paste the Client ID, then click **Save & sign in**. X analytics reads also cost money, so they are **off by default** (Settings → Fetch X analytics).
+3. In Spektly, paste the Client ID, then click **Save & sign in**. X analytics reads also cost money, so they are **off by default** (Settings → Fetch X analytics).
 
 ---
 
@@ -119,7 +119,7 @@ Portals rename menus often. If a label below doesn't match, look for the nearest
 
 1. Claude drafts the scripts and captions and produces media with Artlist.
 2. Claude hands you one folder: the media files plus a `batch.json`.
-3. In Creator Hub, click **Import batch** and pick the `batch.json`. Posts land in **Approvals**.
+3. In Spektly, click **Import batch** and pick the `batch.json`. Posts land in **Approvals**.
 4. Review, then click **Approve all**. The scheduler posts each one on time and records links and analytics.
 
 Batch format:
