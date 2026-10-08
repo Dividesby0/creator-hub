@@ -15,7 +15,37 @@ let calMonth = new Date(); calMonth.setDate(1);
 
 const pname = id => S.accounts.find(a => a.id === id)?.name || id;
 const pcolor = id => `var(--${id})`;
-const chip = (id, extra = '', cls = '') => `<span class="chip ${cls}"><span class="pd" style="background:${pcolor(id)}"></span>${esc(pname(id))}${extra}</span>`;
+// Platform marks: the real logo in a small app-icon tile, so every channel is recognisable at a glance.
+const PLATFORM_ORDER = ['youtube', 'tiktok', 'instagram', 'threads', 'facebook', 'x'];
+function pmark(id, size = 'sm') {
+  const m = PLATFORM_MARKS[id];
+  if (!m) return '';
+  return `<span class="pmark pm-${id} ${size}" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="${m.path}"/></svg></span>`;
+}
+const chip = (id, extra = '', cls = '') => `<span class="chip ${cls}">${pmark(id, 'xs')}${esc(pname(id))}${extra}</span>`;
+const marks = ids => `<span class="markstack">${ids.map(id => pmark(id, 'xs')).join('')}</span>`;
+
+// Turn raw platform/API errors into one plain sentence plus the original text for support.
+function friendly(raw, pid) {
+  const s = String(raw || ''), n = pid ? pname(pid) : 'The platform';
+  const say = text => ({ text, detail: s });
+  if (!s) return null;
+  if (/invalid_client|client secret is invalid/i.test(s)) return say(`${n} did not accept Spektly's sign-in. Click Connect again; this was fixed in version 2.3.`);
+  if (/access_denied|user denied|declined/i.test(s)) return say(`Access was not granted on the ${n} sign-in page. Click Connect and choose Continue or Allow.`);
+  if (/timed out|restarted/i.test(s)) return say(`The sign-in was not finished in your browser. Click Connect to start it again.`);
+  if (/OAuth access token|parse access token|invalid[_ ]token|token.*expired|expired.*token|invalid_grant|\b401\b/i.test(s)) return say(`The saved ${n} sign-in no longer works. Reconnect ${n} to fix it.`);
+  if (/\b402\b|credits/i.test(s)) return say(`Your X developer account is out of credits. Add credits in the X developer portal, then retry.`);
+  if (/\b429\b|rate limit|too many/i.test(s)) return say(`${n} is limiting how often Spektly can post. It will retry automatically.`);
+  if (/\b403\b|permission|scope/i.test(s)) return say(`${n} refused this action. Reconnect and allow every permission on the sign-in page.`);
+  if (/ENOTFOUND|ECONN|network|fetch failed|EAI_AGAIN/i.test(s)) return say(`Spektly could not reach ${n}. Check your internet connection; it will retry.`);
+  if (/public media URL|publicMediaUrl/i.test(s)) return say(s);
+  return say(`${n} returned an error.`);
+}
+function issue(raw, pid) {
+  const f = friendly(raw, pid);
+  if (!f) return '';
+  return `<div class="issue"><span>${esc(f.text)}</span>${f.detail && f.detail !== f.text ? `<details><summary>Details</summary><code>${esc(f.detail)}</code></details>` : ''}</div>`;
+}
 
 function toast(msg, err = false) {
   const t = document.createElement('div');
@@ -39,7 +69,8 @@ async function refresh() {
   if (ub) { ub.hidden = !S.update; if (S.update) ub.innerHTML = `Spektly ${S.update.version} is available. <a data-url="${S.update.url}">Download it</a>. Installing it replaces this version automatically.`; }
   if (S.settings.theme && document.documentElement.dataset.theme !== S.settings.theme) Theme.apply(S.settings.theme);
   renderWizard();
-  $('#navStatus').innerHTML = `${connected}/6 accounts connected<br>${upcoming} post${upcoming === 1 ? '' : 's'} scheduled<br><span class="small">Posts only while this app is running.</span><br><span class="small">v${S.version || ''}</span>`;
+  $('#navStatus').innerHTML = `<div class="navmarks" title="${connected} of 6 channels connected">${PLATFORM_ORDER.map(pid => `<span class="${S.accounts.find(a => a.id === pid)?.connected ? 'on' : ''}">${pmark(pid, 'xs')}</span>`).join('')}</div>
+    <div>${upcoming} post${upcoming === 1 ? '' : 's'} scheduled</div><div class="small">Keep Spektly running so posts go out on time.</div><div class="small">Version ${esc(S.version || '')}</div>`;
   render();
 }
 
@@ -62,35 +93,69 @@ function render() {
 const afterRender = {};
 
 // ================= Dashboard =================
+function setupTrack() {
+  const steps = [
+    { done: S.accounts.some(a => a.connected), title: 'Connect a channel', body: 'YouTube takes one click with your Google account.', go: 'accounts', cta: 'Open Accounts' },
+    { done: S.posts.length > 0, title: 'Write your first post', body: 'One caption, sent to every channel you pick.', go: 'compose', cta: 'Compose' },
+    { done: S.posts.some(p => ['approved', 'publishing', 'published', 'partial_failed'].includes(p.status)), title: 'Approve and schedule it', body: 'Nothing goes live until you approve it.', go: 'approvals', cta: 'Approvals' }
+  ];
+  if (steps.every(x => x.done)) return '';
+  const cur = steps.findIndex(x => !x.done);
+  return `<section class="track" aria-label="Getting started">${steps.map((x, i) => `
+    <div class="track-step ${x.done ? 'done' : i === cur ? 'now' : ''}">
+      <span class="tnum">${x.done ? '<svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></svg>' : i + 1}</span>
+      <div><div class="tt">${x.title}</div><div class="muted small">${x.body}</div>
+      ${i === cur ? `<button class="btn primary sm" data-go="${x.go}">${x.cta}</button>` : ''}</div>
+    </div>`).join('')}</section>`;
+}
+function weekDays() {
+  const d0 = new Date(); d0.setHours(0, 0, 0, 0);
+  return Array.from({ length: 7 }, (_, i) => { const d = new Date(d0); d.setDate(d0.getDate() + i); return d; });
+}
+function channelBoard() {
+  const days = weekDays(), end = new Date(days[6]); end.setDate(end.getDate() + 1);
+  const inWeek = S.posts.filter(p => { const t = new Date(p.scheduledAt); return t >= days[0] && t < end; });
+  const cell = (pid, d) => inWeek.filter(p => p.platforms.includes(pid) && new Date(p.scheduledAt).toDateString() === d.toDateString())
+    .map(p => {
+      const r = p.results?.[pid]; const st = r?.status === 'failed' ? 'failed' : r?.status === 'published' ? 'published' : p.status;
+      return `<button class="slot st-${st}" data-action="edit" data-id="${p.id}" title="${esc(STATUS_LABEL[st] || st)}: ${esc(p.title || p.caption.slice(0, 60))}">
+        <span class="time">${new Date(p.scheduledAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+        <span class="ttl">${esc(p.title || p.caption.slice(0, 40) || 'Untitled')}</span></button>`;
+    }).join('');
+  const lanes = PLATFORM_ORDER.map(pid => {
+    const a = S.accounts.find(x => x.id === pid);
+    return `<div class="lane ${a.connected ? '' : 'off'}">
+      <div class="lane-head">${pmark(pid, 'md')}<div><div class="ln">${esc(a.name)}</div>
+        <div class="small ${a.connected ? 'muted' : ''}">${a.connected ? esc(a.profile?.name || 'Connected') : `<a data-go="accounts">Connect</a>`}</div></div></div>
+      ${days.map((d, i) => `<div class="cell ${i === 0 ? 'today' : ''}">${cell(pid, d)}</div>`).join('')}
+    </div>`;
+  }).join('');
+  return `<section class="board" aria-label="This week across your channels">
+    <div class="board-top"><div class="lane-head"></div>${days.map((d, i) => `<div class="dh ${i === 0 ? 'today' : ''}"><span>${i === 0 ? 'Today' : d.toLocaleDateString([], { weekday: 'short' })}</span><b>${d.getDate()}</b></div>`).join('')}</div>
+    ${lanes}</section>`;
+}
 function dashboard() {
   const posts = S.posts;
-  const now = Date.now();
-  const next = posts.filter(p => ['approved', 'pending_approval'].includes(p.status) && new Date(p.scheduledAt) >= now).slice(0, 6);
-  const published = posts.filter(p => p.status === 'published').length;
+  const week = weekDays(); const end = new Date(week[6]); end.setDate(end.getDate() + 1);
+  const thisWeek = posts.filter(p => { const t = new Date(p.scheduledAt); return t >= week[0] && t < end && ['approved', 'pending_approval', 'publishing'].includes(p.status); });
+  const chans = new Set(thisWeek.flatMap(p => p.platforms));
+  const waiting = posts.filter(p => p.status === 'pending_approval').length;
   const failed = posts.filter(p => ['failed', 'partial_failed'].includes(p.status));
-  const followers = S.accounts.filter(a => a.connected).map(a => {
-    const h = S.analytics.account[a.id] || [];
-    return { id: a.id, f: h.at(-1)?.followers ?? null };
-  });
-  const totalF = followers.reduce((s, x) => s + (x.f || 0), 0);
+  const headline = thisWeek.length
+    ? `${thisWeek.length} post${thisWeek.length > 1 ? 's go' : ' goes'} out this week on ${chans.size} channel${chans.size > 1 ? 's' : ''}.`
+    : S.accounts.some(a => a.connected) ? 'Nothing is scheduled for the next 7 days.' : 'Connect a channel to start scheduling.';
   return `
-  <div class="header"><div><h1>Dashboard</h1><div class="muted">Everything scheduled, waiting, and working.</div></div>
-    <div class="row"><button class="btn" data-action="import">Import batch</button><button class="btn primary" data-go="compose">New post</button></div></div>
-  ${S.accounts.some(a => a.connected) ? '' : `<div class="note info">Start in <a data-go="accounts">Accounts</a>: connect at least one platform. YouTube is one click.</div>`}
-  ${failed.length ? `<div class="note">${failed.length} post${failed.length > 1 ? 's' : ''} failed on at least one platform. <a data-go="queue">Review in Queue</a>.</div>` : ''}
-  <div class="grid g4" style="margin-bottom:14px">
-    <div class="card stat"><div class="muted small">Total followers</div><div class="n">${fmtN(totalF)}</div><div class="muted small">across connected accounts</div></div>
-    <div class="card stat"><div class="muted small">Scheduled</div><div class="n">${posts.filter(p => p.status === 'approved').length}</div><div class="muted small">approved and queued</div></div>
-    <div class="card stat"><div class="muted small">Awaiting approval</div><div class="n">${posts.filter(p => p.status === 'pending_approval').length}</div><div class="muted small"><a data-go="approvals">review now</a></div></div>
-    <div class="card stat"><div class="muted small">Published</div><div class="n">${published}</div><div class="muted small">all time</div></div>
-  </div>
-  <div class="grid g2">
-    <div class="card"><h2>Up next</h2>${next.length ? `<table>${next.map(p => `<tr><td style="width:130px">${fmtDate(p.scheduledAt)}</td><td>${esc(p.title || p.caption.slice(0, 60))}<div class="row" style="margin-top:6px">${p.platforms.map(id => chip(id)).join('')}</div></td><td><span class="status-pill s-${p.status}">${STATUS_LABEL[p.status]}</span></td></tr>`).join('')}</table>` : '<div class="empty">Nothing scheduled.</div>'}</div>
-    <div class="card"><h2>Accounts</h2><table>${S.accounts.map(a => {
-      const f = (S.analytics.account[a.id] || []).at(-1)?.followers;
-      return `<tr><td>${chip(a.id)}</td><td class="muted">${a.connected ? esc(a.profile?.name || '') : 'Not connected'}</td><td class="num">${f != null ? fmtN(f) + ' followers' : ''}</td></tr>`;
-    }).join('')}</table></div>
-  </div>`;
+  <div class="header"><div><h1>${headline}</h1>
+    <div class="muted">${waiting ? `<a data-go="approvals">${waiting} waiting for your approval</a>. ` : ''}Spektly posts on time while it is running on this computer.</div></div>
+    <div class="row"><button class="btn" data-action="import">Import batch</button><button class="btn primary" data-go="compose" data-new="1">New post</button></div></div>
+  ${setupTrack()}
+  ${failed.length ? `<section class="attention"><h2>Needs your attention</h2>${failed.slice(0, 4).map(p => {
+    const bad = p.platforms.filter(pid => p.results?.[pid]?.status === 'failed');
+    return `<div class="att-row">${marks(bad)}<div class="att-body"><div>${esc(p.title || p.caption.slice(0, 70) || 'Untitled')}</div>
+      ${bad.map(pid => issue(p.results[pid].error, pid)).join('')}</div>
+      <button class="btn sm primary" data-action="retry" data-id="${p.id}">Retry</button></div>`;
+  }).join('')}</section>` : ''}
+  ${channelBoard()}`;
 }
 
 // ================= Compose =================
@@ -120,8 +185,12 @@ function compose() {
       <label class="check"><input type="checkbox" id="c-ai" ${p.aiGenerated ? 'checked' : ''}> Contains realistic AI-generated or altered media (sets platform AI labels)</label>
     </div>
     <div class="card">
-      <h2>Platforms</h2>
-      <div class="platforms-pick">${S.accounts.map(a => `<div class="pp ${p.platforms.includes(a.id) ? 'on' : ''} ${a.connected ? '' : 'off'}" data-action="togglePlatform" data-pid="${a.id}"><span class="pd chip" style="padding:0;border:0;background:none"><span class="pd" style="background:${pcolor(a.id)}"></span></span><div><div>${esc(a.name)}</div><div class="muted small">${a.connected ? 'connected' : 'not connected'}</div></div></div>`).join('')}</div>
+      <h2>Channels</h2>
+      <div class="platforms-pick">${PLATFORM_ORDER.map(pid => { const a = S.accounts.find(x => x.id === pid); return `<button class="pp ${p.platforms.includes(pid) ? 'on' : ''} ${a.connected ? '' : 'off'}" data-action="togglePlatform" data-pid="${pid}" aria-pressed="${p.platforms.includes(pid)}">
+        ${pmark(pid, 'md')}<span class="pp-txt"><span class="pp-name">${esc(a.name)}</span><span class="pp-meta" data-meter="${pid}">${a.connected ? '' : 'Not connected'}</span></span>
+        <span class="pp-check" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></svg></span>
+        <span class="pp-bar" data-bar="${pid}"></span></button>`; }).join('')}</div>
+      ${p.platforms.some(pid => !S.accounts.find(a => a.id === pid).connected) ? `<div class="issue" style="margin-top:10px"><span>Some picked channels are not connected yet. <a data-go="accounts">Connect them</a> before this post is due, or it will fail there.</span></div>` : ''}
       <div id="c-overrides" style="margin-top:16px">${p.platforms.map(pid => overrideBlock(p, pid)).join('')}</div>
       <div id="c-problems"></div>
       <div class="row" style="margin-top:16px">
@@ -163,14 +232,19 @@ function updateCounter() {
   if (!$('#c-caption')) return;
   const base = $('#c-caption').value;
   const ai = $('#c-ai').checked && S.settings.appendAiHashtag ? ('\n\n' + S.settings.aiHashtag).length : 0;
-  const pls = editing.platforms.length ? editing.platforms : Object.keys(LIMITS);
-  $('#c-counter').innerHTML = pls.map(pid => {
+  const over = [];
+  for (const pid of PLATFORM_ORDER) {
+    const a = S.accounts.find(x => x.id === pid);
     const ov = $(`[data-ov="${pid}"][data-key="caption"]`)?.value;
-    const n = (ov || base).length + ai;
-    return `<span class="${n > LIMITS[pid] ? 'over' : ''}">${esc(pname(pid))} ${n}/${LIMITS[pid]}</span>`;
-  }).join('');
+    const n = (ov || base).length + ai, lim = LIMITS[pid];
+    const meta = $(`[data-meter="${pid}"]`), bar = $(`[data-bar="${pid}"]`);
+    if (meta) meta.textContent = a.connected ? `${fmtN(n)} / ${fmtN(lim)}` : 'Not connected';
+    if (bar) { bar.style.setProperty('--fill', Math.min(1, n / lim)); bar.classList.toggle('over', n > lim); }
+    if (n > lim && editing.platforms.includes(pid)) over.push(`${pname(pid)} is ${fmtN(n - lim)} characters over`);
+  }
   const hasLink = /https?:\/\/\S+/.test(base);
-  if (editing.platforms.includes('x')) $('#c-counter').innerHTML += `<span>X cost ≈ $${hasLink ? '0.20' : '0.015'}${hasLink ? ' (link)' : ''}</span>`;
+  $('#c-counter').innerHTML = (over.length ? `<span class="over">${esc(over.join('. '))}. Shorten the caption or add an override for it.</span>` : '')
+    + (editing.platforms.includes('x') ? `<span>Posting to X costs about $${hasLink ? '0.20' : '0.015'}${hasLink ? ' because the caption has a link' : ''}.</span>` : '');
 }
 afterRender.compose = () => updateCounter();
 document.addEventListener('input', e => { if (view === 'compose' && e.target.closest('#c-caption, [data-ov], #c-ai')) updateCounter(); });
@@ -180,8 +254,8 @@ function resultChips(p) {
   return p.platforms.map(pid => {
     const r = p.results?.[pid];
     if (!r) return chip(pid);
-    if (r.status === 'published') return `<a data-url="${esc(r.url)}" title="${esc(r.note || '')}">${chip(pid, ' ✓', 'ok')}</a>`;
-    return `<span title="${esc(r.error)}">${chip(pid, ` ✕ ${r.attempts}x`, 'bad')}</span>`;
+    if (r.status === 'published') return `<a data-url="${esc(r.url)}" title="Open the live post">${chip(pid, '<span class="cs">posted</span>', 'ok')}</a>`;
+    return chip(pid, `<span class="cs">failed${r.attempts > 1 ? `, ${r.attempts} tries` : ''}</span>`, 'bad');
   }).join('');
 }
 function queue() {
@@ -191,17 +265,17 @@ function queue() {
     ['Drafts', S.posts.filter(p => p.status === 'draft')],
     ['Published', S.posts.filter(p => p.status === 'published').reverse()]
   ];
-  return `<div class="header"><div><h1>Queue</h1><div class="muted">Hover a red platform chip to see the error. Published chips link to the live post.</div></div>
+  return `<div class="header"><div><h1>Queue</h1><div class="muted">Everything you have written, grouped by what it needs next. Click a published channel to open the live post.</div></div>
     <div class="row"><button class="btn" data-action="import">Import batch</button><button class="btn primary" data-go="compose" data-new="1">New post</button></div></div>
   ${groups.map(([name, list]) => list.length ? `<div class="card" style="margin-bottom:14px"><h2>${name} <span class="muted">(${list.length})</span></h2><table>
-    <tr><th style="width:140px">When</th><th>Post</th><th style="width:130px">Status</th><th style="width:250px"></th></tr>
+    <tr><th style="width:140px">When</th><th>Post</th><th style="width:130px">Status</th><th style="width:300px"></th></tr>
     ${list.map(p => `<tr><td>${fmtDate(p.scheduledAt)}</td>
       <td><div>${esc(p.title || p.caption.slice(0, 80) || '(untitled)')}</div>
         <div class="row" style="margin-top:6px">${resultChips(p)}${p.mediaType !== 'none' ? `<span class="muted small">${p.mediaType}</span>` : ''}${p.aiGenerated ? '<span class="muted small">AI label</span>' : ''}</div>
-        ${p.platforms.map(pid => p.results?.[pid]?.status === 'failed' ? `<div class="small" style="color:var(--bad);margin-top:4px">${esc(pname(pid))}: ${esc(p.results[pid].error)}</div>` : p.results?.[pid]?.note ? `<div class="small muted" style="margin-top:4px">${esc(pname(pid))}: ${esc(p.results[pid].note)}</div>` : '').join('')}</td>
+        ${p.platforms.map(pid => p.results?.[pid]?.status === 'failed' ? issue(p.results[pid].error, pid) : p.results?.[pid]?.note ? `<div class="small muted" style="margin-top:4px">${esc(pname(pid))}: ${esc(p.results[pid].note)}</div>` : '').join('')}</td>
       <td><span class="status-pill s-${p.status}">${STATUS_LABEL[p.status] || p.status}</span></td>
       <td><div class="row">${actionsFor(p)}</div></td></tr>`).join('')}
-  </table></div>` : '').join('') || '<div class="card empty">No posts yet. Compose one, or import a batch file.</div>'}`;
+  </table></div>` : '').join('') || `<div class="card empty"><p>No posts yet.</p><button class="btn primary" data-go="compose" data-new="1">Write a post</button></div>`}`;
 }
 function actionsFor(p) {
   const a = [];
@@ -211,7 +285,7 @@ function actionsFor(p) {
   if (['approved', 'pending_approval', 'draft'].includes(p.status)) a.push(`<button class="btn sm" data-action="publishNow" data-id="${p.id}">Post now</button>`);
   if (['failed', 'partial_failed', 'retrying'].includes(p.status)) a.push(`<button class="btn sm primary" data-action="retry" data-id="${p.id}">Retry</button>`);
   a.push(`<button class="btn sm" data-action="duplicate" data-id="${p.id}">Duplicate</button>`);
-  if (p.status !== 'publishing') a.push(`<button class="btn sm danger" data-action="delete" data-id="${p.id}">Delete</button>`);
+  if (p.status !== 'publishing') a.push(`<button class="btn sm quiet" data-action="delete" data-id="${p.id}">Delete</button>`);
   return a.join('');
 }
 
@@ -228,7 +302,7 @@ function calendar() {
     <div class="row"><button class="btn" data-action="calPrev">‹</button><button class="btn" data-action="calToday">Today</button><button class="btn" data-action="calNext">›</button></div></div>
   <div class="cal">${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => `<div class="dow">${d}</div>`).join('')}
   ${days.map(d => `<div class="day ${d.getMonth() !== m ? 'other' : ''} ${d.toDateString() === today ? 'today' : ''}"><div class="d">${d.getDate()}</div>
-    ${(byDay[d.toDateString()] || []).map(p => `<div class="ev ${p.status}" data-action="edit" data-id="${p.id}" title="${esc(STATUS_LABEL[p.status])}">${new Date(p.scheduledAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} ${esc(p.title || p.caption.slice(0, 30))}</div>`).join('')}
+    ${(byDay[d.toDateString()] || []).map(p => `<div class="ev ${p.status}" data-action="edit" data-id="${p.id}" title="${esc(STATUS_LABEL[p.status])}">${marks(p.platforms)}<span>${new Date(p.scheduledAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} ${esc(p.title || p.caption.slice(0, 30))}</span></div>`).join('')}
   </div>`).join('')}</div>`;
 }
 
@@ -243,7 +317,7 @@ function approvals() {
     <p style="white-space:pre-wrap;margin:10px 0">${esc(p.caption)}</p>
     <div class="row" style="margin-bottom:12px">${p.platforms.map(id => chip(id)).join('')}${p.aiGenerated ? '<span class="chip">AI label on</span>' : ''}</div>
     <div class="row"><button class="btn primary" data-action="approve" data-id="${p.id}">Approve</button><button class="btn" data-action="edit" data-id="${p.id}">Edit</button><button class="btn" data-action="reject" data-id="${p.id}">Back to drafts</button></div>
-  </div>`).join('')}</div>` : '<div class="card empty">Nothing waiting for approval.</div>'}`;
+  </div>`).join('')}</div>` : `<div class="card empty"><p>Nothing is waiting for approval.</p><button class="btn" data-go="queue">Open the Queue</button></div>`}`;
 }
 
 // ================= Analytics =================
@@ -301,7 +375,8 @@ const CONNECT_COPY = {
 };
 const ONE_CLICK_COPY = CONNECT_COPY;
 function connectButton(a) {
-  if (a.oneClick) return `<button class="btn primary" data-action="connectOneClick" data-pid="${a.id}">${a.provider === 'google' ? 'Connect with Google' : `Connect ${esc(a.name)}`}</button>`;
+  if (a.oneClick && a.provider === 'google') return `<button class="btn gbtn" data-action="connectOneClick" data-pid="${a.id}">${pmark('google', 'g')}Connect with Google</button>`;
+  if (a.oneClick) return `<button class="btn primary" data-action="connectOneClick" data-pid="${a.id}">Connect ${esc(a.name)}</button>`;
   return `<button class="btn" data-action="assist" data-pid="${a.id}">Set up ${esc(a.name)}</button>`;
 }
 function ownKeysForm(a) {
@@ -311,22 +386,27 @@ function ownKeysForm(a) {
       : `<label class="field"><span>${esc(f.label)}</span><input type="${f.secret ? 'password' : 'text'}" name="${f.key}" value="${esc(f.value)}" placeholder="${f.secret && f.hasValue ? '•••••• saved (leave blank to keep)' : ''}" autocomplete="off">${f.help ? `<div class="muted small" style="margin-top:4px">${esc(f.help)}</div>` : ''}</label>`).join('')}
     </form>`;
 }
-function accountStatus(a) {
-  return a.connected ? `<span class="small" style="color:var(--ok)">✓ Connected as ${esc(a.profile?.name)}</span>` : '<span class="muted small">Not connected</span>';
-}
-function accountCard(a) {
-  const disconnect = a.connected ? `<button class="btn danger" data-action="disconnect" data-pid="${a.id}">Disconnect</button>` : '';
-  return `<div class="card acct">
-    <div class="row" style="justify-content:space-between;margin-bottom:8px"><div class="row">${chip(a.id)}${accountStatus(a)}</div></div>
-    ${a.lastError ? `<div class="note">${esc(a.lastError)}</div>` : ''}
-    <p class="muted small" style="margin:0 0 14px">${esc(CONNECT_COPY[a.id] || '')}</p>
-    <div class="row">${a.connected ? `<button class="btn" data-action="${a.oneClick ? 'connectOneClick' : 'assist'}" data-pid="${a.id}">Reconnect</button>` : connectButton(a)}${disconnect}
-      ${a.oneClick ? `<a class="small muted" style="margin-left:auto" data-action="assist" data-pid="${a.id}">Use my own developer keys</a>` : ''}</div></div>`;
+function accountRow(a) {
+  const state = a.connected ? `<span class="state on">Connected as ${esc(a.profile?.name || 'your account')}</span>` : `<span class="state">Not connected</span>`;
+  const actions = a.connected
+    ? `<button class="btn sm" data-action="${a.oneClick ? 'connectOneClick' : 'assist'}" data-pid="${a.id}">Reconnect</button><button class="btn sm quiet" data-action="disconnect" data-pid="${a.id}">Disconnect</button>`
+    : connectButton(a);
+  return `<div class="chan ${a.connected ? 'is-on' : ''}">
+    ${pmark(a.id, 'lg')}
+    <div class="chan-body">
+      <div class="chan-title"><h3>${esc(a.name)}</h3>${state}</div>
+      <p class="muted small">${esc(CONNECT_COPY[a.id] || '')}</p>
+      ${!a.connected && a.lastError ? issue(a.lastError, a.id) : ''}
+      ${a.oneClick && !a.connected ? '' : !a.oneClick && !a.connected ? '<p class="muted small hint">Needs a free developer app from the platform, about five minutes once. Set up walks you through it.</p>' : ''}
+    </div>
+    <div class="chan-act">${actions}${a.oneClick ? `<a class="small muted" data-action="assist" data-pid="${a.id}">Use my own developer keys</a>` : ''}</div>
+  </div>`;
 }
 function accounts() {
-  return `<div class="header"><div><h1>Accounts</h1><div class="muted">Sign-ins are encrypted on this computer and only used to talk to each platform.</div></div>
+  const n = S.accounts.filter(a => a.connected).length;
+  return `<div class="header"><div><h1>${n ? `${n} of 6 channels connected` : 'Connect your channels'}</h1><div class="muted">Sign-ins are encrypted on this computer and only used to talk to each platform.</div></div>
     <button class="btn" data-action="runSetup">Run setup again</button></div>
-  <div class="grid g2">${S.accounts.map(accountCard).join('')}</div>`;
+  <div class="chans">${PLATFORM_ORDER.map(pid => accountRow(S.accounts.find(a => a.id === pid))).join('')}</div>`;
 }
 
 // ================= Guided setup for platforms without one-click sign-in =================
