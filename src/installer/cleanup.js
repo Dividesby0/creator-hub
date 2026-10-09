@@ -36,7 +36,7 @@ function appBundleOf(exePath) {
 // macOS runs a freshly downloaded, unsigned app from a hidden read-only copy ("App Translocation").
 // From there the real install in /Applications looks like "another copy", so app cleanup must stand down.
 function isTranslocated(p) {
-  return !!p && /\/AppTranslocation\//.test(p);
+  return !!p && /[\\/]AppTranslocation[\\/]/.test(p);
 }
 const inApplicationsFolder = p => path.basename(path.dirname(p)) === 'Applications';
 
