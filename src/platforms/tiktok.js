@@ -9,6 +9,8 @@ const API = 'https://open.tiktokapis.com/v2';
 const SCOPES = ['user.info.basic', 'user.info.stats', 'video.upload', 'video.publish', 'video.list'];
 const oneclick = require('../oauth/oneclick');
 const flows = require('../oauth/flows');
+const looksLikeTikTokKey = k => /^(sb)?aw[a-z0-9]{10,}$/i.test(String(k || '').trim());
+const signInOpener = (ctx, name) => ctx.openSignIn ? url => ctx.openSignIn(url, { title: `Sign in to ${name}` }) : ctx.openExternal;
 const MIN_CHUNK = 5 * 1024 * 1024, MAX_SINGLE = 64 * 1024 * 1024, CHUNK = 10 * 1024 * 1024;
 
 function tt(body) {
@@ -53,6 +55,7 @@ async function uploadChunks(uploadUrl, filePath, info, plan) {
 }
 
 module.exports = {
+  looksLikeTikTokKey,
   id: 'tiktok',
   name: 'TikTok',
   auth: 'oauth',
@@ -72,10 +75,12 @@ module.exports = {
 
   async connect(ctx) {
     const { clientKey, clientSecret } = ctx.account.config;
-    // Own keys only count when both are filled in; a half-filled form (or a username typed into the
-    // key box) must never override Spektly's built-in TikTok app.
-    const ownKeys = !!(clientKey && clientKey.trim() && clientSecret && String(clientSecret).trim());
+    // Spektly's built-in TikTok app always wins unless the form holds a real, different TikTok key
+    // and a secret. A username or handle typed into the key box (e.g. "decrypt443") is ignored.
+    const ownKeys = looksLikeTikTokKey(clientKey) && String(clientKey).trim() !== oneclick.appId('tiktok')
+      && !!String(clientSecret || '').trim();
     if (!ownKeys && oneclick.available('tiktok')) return flows.tiktok(ctx);
+    if (clientKey && !looksLikeTikTokKey(clientKey)) throw new Error(`"${String(clientKey).trim()}" is not a TikTok client key. Client keys start with "aw" (or "sbaw" for a sandbox) and come from developers.tiktok.com.`);
     if (!clientKey || !clientSecret) throw new Error('Enter the Client key and Client secret first.');
     const verifier = randomVerifier();
     const state = crypto.randomUUID();
@@ -83,7 +88,7 @@ module.exports = {
       client_key: clientKey, response_type: 'code', scope: SCOPES.join(','), redirect_uri: REDIRECT_URI,
       state, code_challenge: challengeHex(verifier), code_challenge_method: 'S256'
     });
-    const code = await waitForAuthCode({ authUrl: url, state, openExternal: ctx.openExternal });
+    const code = await waitForAuthCode({ authUrl: url, state, openExternal: signInOpener(ctx, 'TikTok') });
     const { body } = await request('TikTok', `${API}/oauth/token/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

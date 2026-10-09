@@ -70,10 +70,10 @@ function loopbackSignIn(opts) {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', Connection: 'close' });
       const page = (title, msg, ok) => `<!doctype html><meta charset="utf-8"><title>Spektly</title><body style="margin:0;height:100vh;display:grid;place-items:center;background:#0b1624;color:#eef1f5;font:16px -apple-system,Segoe UI,sans-serif"><div style="text-align:center;max-width:420px;padding:24px"><div style="font-size:15px;font-weight:700;letter-spacing:-.02em;color:#7fa3cc;margin-bottom:18px">spektly</div><div style="width:56px;height:56px;margin:0 auto;border-radius:50%;display:grid;place-items:center;font-size:28px;background:${ok ? '#4fd1a5' : '#f28b8b'};color:#0b1624">${ok ? '&#10003;' : '!'}</div><h2 style="margin:16px 0 6px">${title}</h2><p style="color:#93a6bd;margin:0">${msg}</p></div></body>`;
       if (err || !code || gotState !== opts.state) {
-        res.end(page('Not connected', 'Nothing was changed. Close this tab and click Connect in Spektly to try again.', false));
+        res.end(page('Not connected', 'Nothing was changed. Close this window and click Connect in Spektly to try again.', false));
         finish(new Error(err ? `Sign-in was not completed (${err}${u.searchParams.get('error_description') ? ': ' + u.searchParams.get('error_description') : ''}).` : 'Sign-in response did not match. Please try again.'));
       } else {
-        res.end(page('Connected', 'You can close this tab. Spektly has finished connecting your account.', true));
+        res.end(page('Connected', 'Spektly has finished connecting your account. This window closes on its own.', true));
         finish(null, code);
       }
     });

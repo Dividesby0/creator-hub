@@ -32,7 +32,9 @@ function friendly(raw, pid) {
   if (!s) return null;
   if (/invalid_client|client secret is invalid/i.test(s)) return say(`${n} did not accept Spektly's sign-in. Click Connect again; this was fixed in version 2.3.`);
   if (/access_denied|user denied|declined/i.test(s)) return say(`Access was not granted on the ${n} sign-in page. Click Connect and choose Continue or Allow.`);
-  if (/timed out|restarted/i.test(s)) return say(`The sign-in was not finished in your browser. Click Connect to start it again.`);
+  if (/window was closed/i.test(s)) return say(`The ${n} sign-in window was closed before it finished. Click Connect to try again.`);
+  if (/timed out|restarted/i.test(s)) return say(`The ${n} sign-in was not finished. Click Connect to start it again.`);
+  if (/is not a TikTok client key/i.test(s)) return say(s);
   if (/OAuth access token|parse access token|invalid[_ ]token|token.*expired|expired.*token|invalid_grant|\b401\b/i.test(s)) return say(`The saved ${n} sign-in no longer works. Reconnect ${n} to fix it.`);
   if (/\b402\b|credits/i.test(s)) return say(`Your X developer account is out of credits. Add credits in the X developer portal, then retry.`);
   if (/\b429\b|rate limit|too many/i.test(s)) return say(`${n} is limiting how often Spektly can post. It will retry automatically.`);

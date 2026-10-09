@@ -18,13 +18,17 @@ function ttTokens(body) {
   if (body.error) throw new Error(`TikTok sign-in failed: ${body.error_description || body.error}`);
   return body;
 }
+// Sign-in pages that work inside Spektly open in an in-app window. Google is the exception: it blocks
+// sign-in from embedded windows, so Google always opens in the default browser.
+const inApp = (ctx, name) => ctx.openSignIn ? url => ctx.openSignIn(url, { title: `Sign in to ${name}` }) : ctx.openExternal;
+
 async function tiktok(ctx) {
   const clientKey = oc.appId('tiktok');
   if (builtinSecret('tiktok')) {
     // Spektly's TikTok desktop app: any free local port (registered as http://127.0.0.1:*/callback/), PKCE with a hex challenge.
     const verifier = randomVerifier();
     const state = crypto.randomUUID();
-    const { code, redirectUri } = await loopbackSignIn({ port: 0, state, openExternal: ctx.openExternal,
+    const { code, redirectUri } = await loopbackSignIn({ port: 0, state, openExternal: inApp(ctx, 'TikTok'),
       buildUrl: redirectUri => 'https://www.tiktok.com/v2/auth/authorize/?' + new URLSearchParams({ client_key: clientKey, scope: TT_SCOPE, response_type: 'code', redirect_uri: redirectUri, state, code_challenge: challengeHex(verifier), code_challenge_method: 'S256' }) });
     const { body } = await request('TikTok', TT_TOKEN, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: toForm({ client_key: clientKey, client_secret: builtinSecret('tiktok'), code, grant_type: 'authorization_code', redirect_uri: redirectUri, code_verifier: verifier }) });
@@ -32,7 +36,7 @@ async function tiktok(ctx) {
     const secret = { accessToken: t.access_token, refreshToken: t.refresh_token, expiresAt: Date.now() + t.expires_in * 1000, via: 'builtin' };
     return { secret, profile: await tiktokProfile(secret) };
   }
-  const { code, redirectUri } = await oc.relaySignIn('tiktok', { openExternal: ctx.openExternal,
+  const { code, redirectUri } = await oc.relaySignIn('tiktok', { openExternal: inApp(ctx, 'TikTok'),
     buildUrl: ({ redirectUri, state }) => 'https://www.tiktok.com/v2/auth/authorize/?' + new URLSearchParams({ client_key: clientKey, scope: TT_SCOPE, response_type: 'code', redirect_uri: redirectUri, state }) });
   const t = await oc.relayToken('tiktok', { grant_type: 'authorization_code', code, redirect_uri: redirectUri });
   const secret = { accessToken: t.access_token, refreshToken: t.refresh_token, expiresAt: Date.now() + t.expires_in * 1000, via: 'relay' };

@@ -247,3 +247,27 @@ test('a half-filled TikTok key form (e.g. a username in the Client key box) neve
   assert.strictEqual(key, 'TTKEY');
   builtinMod._reset(null, null);
 });
+
+test('a non-key in the TikTok form (even with a secret) never overrides the built-in app; sign-in opens in the app window', async () => {
+  builtinMod._reset({ tiktok: { clientSecret: 'TT-SECRET' } }, { tiktok: { clientKey: 'sbawTESTKEY12345' } });
+  global.fetch = async url => String(url).includes('/oauth/token/') ? Response.json({ access_token: 'AT', refresh_token: 'RT', expires_in: 86400 })
+    : Response.json({ data: { user: { display_name: 'decrypt443', open_id: 'O1' } } });
+  const store = new Store(tmp());
+  store.setAccount('tiktok', { config: { clientKey: 'decrypt443', clientSecret: 'whatever-was-typed' } });
+  let key, external = 0, title;
+  const engine = new Engine({ store, box, openExternal: () => { external++; }, openSignIn: (url, o) => {
+    const u = new URL(url); key = u.searchParams.get('client_key'); title = o.title;
+    setTimeout(() => http.get(`${u.searchParams.get('redirect_uri')}?code=C1&state=${u.searchParams.get('state')}`, { agent: false }, r => r.resume()), 20);
+  } });
+  await engine.connect('tiktok');
+  assert.strictEqual(key, 'sbawTESTKEY12345');
+  assert.strictEqual(external, 0, 'TikTok sign-in does not leave the app');
+  assert.strictEqual(title, 'Sign in to TikTok');
+  builtinMod._reset(null, null);
+});
+
+test('closing the sign-in window cancels the pending sign-in with a clear message', async () => {
+  const util = require('../src/util');
+  const p = util.loopbackSignIn({ port: 0, state: 's', openExternal: () => setTimeout(() => util.cancelPendingSignIn('The sign-in window was closed before you finished. Click Connect to try again.'), 10), buildUrl: r => 'https://example.com/?r=' + r });
+  await assert.rejects(p, /window was closed/);
+});

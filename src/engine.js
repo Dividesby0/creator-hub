@@ -12,10 +12,11 @@ class Engine {
    * @param {(url:string)=>void} o.openExternal
    * @param {(evt:string, data?:any)=>void} [o.notify]
    */
-  constructor({ store, box, openExternal, notify, platformMap }) {
+  constructor({ store, box, openExternal, openSignIn, notify, platformMap }) {
     this.store = store;
     this.box = box;
     this.openExternal = openExternal;
+    this.openSignIn = openSignIn || null;
     this.notify = notify || (() => {});
     this.platforms = platformMap || platforms.byId;
     this.busy = new Set();
@@ -62,6 +63,7 @@ class Engine {
       account,
       settings: this.store.data.settings,
       openExternal: this.openExternal,
+      openSignIn: this.openSignIn,
       saveSecret: async (next) => {
         account.secret = next;
         const cur = this.store.getAccount(pid);

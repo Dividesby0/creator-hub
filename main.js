@@ -12,6 +12,7 @@ const cleanupMod = require('./src/installer/cleanup');
 const { checkForUpdate } = require('./src/installer/updates');
 const os = require('os');
 const pkg = require('./package.json');
+const { cancelPendingSignIn } = require('./src/util');
 
 // The app used to be called "Creator Hub". Its data folder is named after the app, so on the first
 // run of Spektly copy the old folder over (posts, accounts, license, settings, theme). Runs before
@@ -77,6 +78,44 @@ const fallback = (() => {
 
 function openExternal(url) {
   if (/^(https:\/\/|mailto:)/i.test(url)) shell.openExternal(url);
+}
+
+// In-app sign-in window for platforms that allow embedded sign-in (TikTok; later Meta and X).
+// Its own persistent session keeps the platform login separate from the app and remembers it for reconnects.
+let signInWin = null;
+const signInUA = () => `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${process.versions.chrome} Safari/537.36`;
+function openSignInWindow(url, { title = 'Sign in' } = {}) {
+  if (!/^https:\/\//i.test(url)) return;
+  if (signInWin && !signInWin.isDestroyed()) { signInWin.__replaced = true; signInWin.close(); }
+  const w = signInWin = new BrowserWindow({
+    parent: win && !win.isDestroyed() ? win : undefined, width: 520, height: 780, minWidth: 420, minHeight: 560,
+    title: `${title} · Spektly`, icon: iconPath(), backgroundColor: '#ffffff', autoHideMenuBar: true, show: false,
+    webPreferences: { partition: 'persist:spektly-signin', contextIsolation: true, nodeIntegration: false, sandbox: true }
+  });
+  w.removeMenu?.();
+  w.webContents.setUserAgent(signInUA());
+  // Pop-ups inside the sign-in page (e.g. "continue with Google/Apple" on TikTok) stay in the app, same session.
+  w.webContents.setWindowOpenHandler(({ url: u }) => /^https:\/\//i.test(u)
+    ? { action: 'allow', overrideBrowserWindowOptions: { parent: w, width: 500, height: 700, autoHideMenuBar: true, webPreferences: { partition: 'persist:spektly-signin', sandbox: true } } }
+    : { action: 'deny' });
+  let finished = false;
+  const onNav = (_e, u) => {
+    if (/^http:\/\/127\.0\.0\.1:\d+\/callback/.test(String(u))) {
+      finished = true;
+      setTimeout(() => { if (!w.isDestroyed()) w.close(); }, 1600);
+    }
+  };
+  w.webContents.on('did-navigate', onNav);
+  w.webContents.on('did-redirect-navigation', (e) => onNav(e, e.url));
+  w.on('page-title-updated', e => { e.preventDefault(); });
+  w.on('closed', () => {
+    if (signInWin === w) signInWin = null;
+    if (!finished && !w.__replaced) cancelPendingSignIn('The sign-in window was closed before you finished. Click Connect to try again.');
+    if (win && !win.isDestroyed()) win.focus();
+  });
+  w.once('ready-to-show', () => { if (!w.isDestroyed()) { w.show(); w.focus(); } });
+  setTimeout(() => { if (!w.isDestroyed() && !w.isVisible()) { w.show(); w.focus(); } }, 1500);
+  w.loadURL(url);
 }
 
 function notify(evt, data) {
@@ -355,7 +394,7 @@ app.whenReady().then(async () => {
   const box = makeBox();
   license = new LicenseManager({ dir, box: fallback, legacyBox: box });
   migrateKeychainValues(box);
-  engine = new Engine({ store, box, openExternal, notify });
+  engine = new Engine({ store, box, openExternal, openSignIn: openSignInWindow, notify });
   insights = new InsightsService({ store, box, openExternal });
   // A YouTube (Google) sign-in also powers Insights, so customers sign in to Google once.
   engine.onConnected = async (pid, secret) => {
