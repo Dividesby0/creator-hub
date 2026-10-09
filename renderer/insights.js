@@ -99,7 +99,13 @@ const Insights = (() => {
     const r = iv.resources || { ga4: [], gsc: [], gbp: [], errors: {} };
     const sel = (key, list, label, err) => `<label class="field"><span>${label}</span>${list?.length
       ? `<select data-ins-select="${key}"><option value="">Not used</option>${list.map(o => `<option value="${e(o.id)}" ${iv.selections[key] === o.id ? 'selected' : ''}>${e(o.name)}</option>`).join('')}</select>`
-      : `<div class="small muted" style="padding:9px 0">${e(err || 'None found for this Google account.')}</div>`}</label>`;
+      : `<div class="small muted" style="padding:9px 0">${e(sourceNote(key, err))}</div>`}</label>`;
+    function sourceNote(k, err) {
+      if (!err) return k === 'ga4Property' ? 'No Google Analytics property on this Google account. Add one in Google Analytics to see website traffic here.' : k === 'gbpLocation' ? 'No Business Profile on this Google account.' : 'None found for this Google account.';
+      if (/quota|Requests per minute|has not been used|SERVICE_DISABLED|accessNotConfigured/i.test(err) && k === 'gbpLocation') return 'Google has not switched on Business Profile access for Spektly yet. Everything else works; this fills in once Google approves access.';
+      if (/insufficient|scope|403/i.test(err)) return 'Spektly does not have permission for this yet. Click Reconnect on YouTube and allow every box.';
+      return err;
+    }
     return `<div class="card" style="margin-bottom:14px"><div class="row" style="justify-content:space-between"><h3 style="margin:0">Data sources</h3><div class="row"><span class="small muted">${r.youtube ? 'YouTube: ' + e(r.youtube.name) : e(r.errors?.youtube || '')}</span><button class="btn sm" data-ins="resources">Re-scan</button></div></div>
       <div class="grid g3" style="margin-top:10px">${sel('ga4Property', r.ga4, 'Google Analytics 4 property', r.errors?.ga4)}${sel('gscSite', r.gsc, 'Search Console site', r.errors?.gsc)}${sel('gbpLocation', r.gbp, 'Business Profile location', r.errors?.gbp)}</div></div>`;
   }
