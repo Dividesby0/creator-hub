@@ -100,7 +100,12 @@ function createWindow() {
   win.webContents.setWindowOpenHandler(({ url }) => { openExternal(url); return { action: 'deny' }; });
   win.webContents.on('will-navigate', e => e.preventDefault());
   loadForLicenseState();
-  win.once('ready-to-show', () => win.show());
+  // Show as soon as the first frame is ready, and never leave the app running without a window:
+  // ready-to-show can be skipped when macOS launches the app in the background (seen after updates).
+  const atLogin = process.platform === 'darwin' && (app.getLoginItemSettings().wasOpenedAsHidden || app.getLoginItemSettings().wasOpenedAtLogin);
+  const reveal = () => { if (atLogin) return; if (win && !win.isDestroyed() && !win.isVisible()) { win.show(); win.focus(); if (process.platform === 'darwin') app.focus({ steal: true }); } };
+  win.once('ready-to-show', reveal);
+  setTimeout(reveal, 2500);
   win.on('close', e => {
     if (!quitting && store?.data.settings.keepRunningInBackground && license?.status().active) {
       e.preventDefault(); win.hide();
@@ -362,7 +367,7 @@ app.whenReady().then(async () => {
   registerIpc();
   createWindow();
   createTray();
-  app.on('activate', () => { win.show(); });
+  app.on('activate', () => { if (win && !win.isDestroyed()) { win.show(); win.focus(); } });
   setTimeout(() => cleanupOldCopies().catch(e => store.addLog('warn', 'Cleanup: ' + e.message)), 4000);
   setTimeout(() => runUpdateCheck(), 8000);
   setInterval(() => runUpdateCheck(), 6 * 3600e3);
