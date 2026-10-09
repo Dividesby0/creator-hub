@@ -231,3 +231,19 @@ test('TikTok one-click with Spektly\'s built-in desktop app: free loopback port,
   assert.ok(!calls.some(c => c.url.includes('relay')), 'never touches the relay');
   builtinMod._reset(null, null);
 });
+
+test('a half-filled TikTok key form (e.g. a username in the Client key box) never overrides the built-in app', async () => {
+  builtinMod._reset({ tiktok: { clientSecret: 'TT-SECRET' } }, { tiktok: { clientKey: 'TTKEY' } });
+  global.fetch = async url => String(url).includes('/oauth/token/') ? Response.json({ access_token: 'AT', refresh_token: 'RT', expires_in: 86400 })
+    : Response.json({ data: { user: { display_name: 'decrypt443', open_id: 'O1' } } });
+  const store = new Store(tmp());
+  store.setAccount('tiktok', { config: { clientKey: 'decrypt443', clientSecret: '' } });
+  let key;
+  const engine = new Engine({ store, box, openExternal: url => {
+    const u = new URL(url); key = u.searchParams.get('client_key');
+    setTimeout(() => http.get(`${u.searchParams.get('redirect_uri')}?code=C1&state=${u.searchParams.get('state')}`, { agent: false }, r => r.resume()), 20);
+  } });
+  await engine.connect('tiktok');
+  assert.strictEqual(key, 'TTKEY');
+  builtinMod._reset(null, null);
+});

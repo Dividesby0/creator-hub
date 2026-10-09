@@ -72,7 +72,10 @@ module.exports = {
 
   async connect(ctx) {
     const { clientKey, clientSecret } = ctx.account.config;
-    if (!clientKey && oneclick.available('tiktok')) return flows.tiktok(ctx);
+    // Own keys only count when both are filled in; a half-filled form (or a username typed into the
+    // key box) must never override Spektly's built-in TikTok app.
+    const ownKeys = !!(clientKey && clientKey.trim() && clientSecret && String(clientSecret).trim());
+    if (!ownKeys && oneclick.available('tiktok')) return flows.tiktok(ctx);
     if (!clientKey || !clientSecret) throw new Error('Enter the Client key and Client secret first.');
     const verifier = randomVerifier();
     const state = crypto.randomUUID();
