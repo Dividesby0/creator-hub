@@ -33,17 +33,31 @@ function appBundleOf(exePath) {
 /**
  * @returns {{ apps: {path, version}[], installers: {path, version}[] }}
  */
+// macOS runs a freshly downloaded, unsigned app from a hidden read-only copy ("App Translocation").
+// From there the real install in /Applications looks like "another copy", so app cleanup must stand down.
+function isTranslocated(p) {
+  return !!p && /\/AppTranslocation\//.test(p);
+}
+const inApplicationsFolder = p => path.basename(path.dirname(p)) === 'Applications';
+
 function findStale({ currentAppPath, currentVersion, dirs, knownPaths = [], fs = nodeFs, bundleId = BUNDLE_ID, legacyBundleIds = LEGACY_BUNDLE_IDS }) {
   const current = currentAppPath ? path.resolve(currentAppPath) : null;
   const seen = new Set();
   const apps = [], installers = [];
+  const appsSafe = !isTranslocated(currentAppPath);
 
   const consider = p => {
     const abs = path.resolve(p);
-    if (seen.has(abs) || abs === current || abs.startsWith('/Volumes/')) return;
+    if (!appsSafe || seen.has(abs) || abs === current || abs.startsWith('/Volumes/') || isTranslocated(abs)) return;
     seen.add(abs);
     const info = readBundleInfo(abs, fs);
-    if (info && (info.bundleId === bundleId || legacyBundleIds.includes(info.bundleId))) apps.push({ path: abs, version: info.version });
+    if (!info) return;
+    if (legacyBundleIds.includes(info.bundleId)) { apps.push({ path: abs, version: info.version }); return; }
+    if (info.bundleId !== bundleId) return;
+    // Never trash a newer copy, and never trash a same-version copy that is the real install.
+    const cmp = currentVersion ? cmpVersion(info.version || '0', currentVersion) : -1;
+    if (cmp > 0 || (cmp === 0 && inApplicationsFolder(abs))) return;
+    apps.push({ path: abs, version: info.version });
   };
 
   for (const p of knownPaths) if (p && fs.existsSync(p)) consider(p);
@@ -75,4 +89,4 @@ async function cleanup(opts) {
   return { removed, failed };
 }
 
-module.exports = { BUNDLE_ID, LEGACY_BUNDLE_IDS, cmpVersion, readBundleInfo, appBundleOf, findStale, cleanup, INSTALLER_RE };
+module.exports = { isTranslocated, BUNDLE_ID, LEGACY_BUNDLE_IDS, cmpVersion, readBundleInfo, appBundleOf, findStale, cleanup, INSTALLER_RE };

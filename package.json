@@ -1,7 +1,7 @@
 {
   "name": "spektly",
   "productName": "Spektly",
-  "version": "2.4.2",
+  "version": "2.4.3",
   "description": "Local-first scheduler, approval queue, publisher and analytics for YouTube, TikTok, Instagram, Threads, Facebook and X.",
   "main": "main.js",
   "license": "UNLICENSED",

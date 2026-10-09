@@ -284,7 +284,7 @@ async function cleanupOldCopies() {
   if (!app.isPackaged) return;
   const meta = store.data.install ||= { knownPaths: [], cleanedFor: null };
   const current = process.platform === 'darwin' ? cleanupMod.appBundleOf(process.execPath) : path.dirname(process.execPath);
-  if (current && !meta.knownPaths.includes(current)) meta.knownPaths.push(current);
+  if (current && !cleanupMod.isTranslocated(current) && !meta.knownPaths.includes(current)) meta.knownPaths.push(current);
   meta.knownPaths = meta.knownPaths.slice(-20);
   if (meta.cleanedFor === pkg.version) { store.save(); return; }
   const home = os.homedir();

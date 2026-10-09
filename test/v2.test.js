@@ -67,6 +67,29 @@ test('cleanup ignores mounted disk images and unreadable folders, reports failur
   assert.strictEqual(r.failed[0].path, old);
 });
 
+test('a translocated launch (fresh download) never trashes the real install in Applications', async () => {
+  const root = tmp(); const applications = path.join(root, 'Applications'); fs.mkdirSync(applications);
+  const installed = fakeApp(applications, 'Spektly.app', 'com.spektly.desktop', '2.4.2');
+  const transloc = path.join(root, 'private/var/folders/x/T/AppTranslocation/ABC/d');
+  fs.mkdirSync(transloc, { recursive: true });
+  const running = fakeApp(transloc, 'Spektly.app', 'com.spektly.desktop', '2.4.2');
+  const trashed = [];
+  await cleanupMod.cleanup({ currentAppPath: running, currentVersion: '2.4.2', dirs: [applications], knownPaths: [installed], trash: async p => { trashed.push(p); } });
+  assert.deepStrictEqual(trashed, [], 'nothing trashed while translocated');
+  assert.ok(cleanupMod.isTranslocated(running));
+});
+
+test('cleanup never trashes a newer copy or the same-version copy in Applications', async () => {
+  const root = tmp(); const applications = path.join(root, 'Applications'); fs.mkdirSync(applications);
+  const other = tmp();
+  const installed = fakeApp(applications, 'Spektly.app', 'com.spektly.desktop', '2.4.2');
+  const newer = fakeApp(other, 'Spektly.app', 'com.spektly.desktop', '2.5.0');
+  const older = fakeApp(applications, 'Spektly 2.app', 'com.spektly.desktop', '2.4.1');
+  const { apps } = cleanupMod.findStale({ currentAppPath: path.join(other, 'Elsewhere.app'), currentVersion: '2.4.2', dirs: [applications, other] });
+  assert.deepStrictEqual(apps.map(a => a.path), [older]);
+  assert.ok(![installed, newer].some(p => apps.find(a => a.path === p)));
+});
+
 test('appBundleOf and version compare', () => {
   assert.strictEqual(cleanupMod.appBundleOf('/Applications/Creator Hub.app/Contents/MacOS/Creator Hub'), '/Applications/Creator Hub.app');
   assert.strictEqual(cleanupMod.appBundleOf('C:\\Program Files\\Creator Hub\\Creator Hub.exe'), null);
