@@ -43,7 +43,8 @@
       "extendInfo": {
         "NSDownloadsFolderUsageDescription": "Spektly removes older copies of itself and old installer files so only the current version stays installed.",
         "NSDesktopFolderUsageDescription": "Spektly removes older copies of itself and old installer files so only the current version stays installed."
-      }
+      },
+      "artifactName": "Spektly-mac-${arch}.${ext}"
     },
     "win": {
       "target": [
@@ -59,7 +60,8 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Spektly",
-      "uninstallDisplayName": "Spektly"
+      "uninstallDisplayName": "Spektly",
+      "artifactName": "Spektly-Setup.${ext}"
     },
     "electronFuses": {
       "runAsNode": false,

@@ -1,5 +1,5 @@
 SPEKTLY: END USER LICENSE AGREEMENT
-Version 1.0 · Effective [EFFECTIVE DATE]
+Version 1.0 · Effective October 10, 2026
 
 IMPORTANT: READ CAREFULLY. This End User License Agreement ("Agreement") is a legal agreement between you (either an individual or a single legal entity, "you") and [COMPANY LEGAL NAME], [STATE/COUNTRY OF ORGANIZATION] ("Licensor", "we", "us"), for the Spektly software, including any updates, documentation, and related materials (the "Software"). By checking "I accept", activating, installing, or using the Software, you agree to be bound by this Agreement. If you do not agree, do not activate, install, or use the Software.
 
@@ -7,14 +7,14 @@ IMPORTANT: READ CAREFULLY. This End User License Agreement ("Agreement") is a le
 1.1 "License Key" means the unique alphanumeric key issued by Licensor that identifies your license, edition, and number of permitted Devices.
 1.2 "Device" means a single physical or virtual computer, identified by the Software's hardware-derived device identifier, on which the Software is activated.
 1.3 "Seat" means one permitted activation of the Software on one Device.
-1.4 "Edition" means the license tier purchased (for example Founder, Personal, Pro, Team, Business, or Enterprise) as shown on your order and encoded in your License Key.
+1.4 "Edition" means the plan or license tier purchased (for example the Solo, Creator, Pro, Studio or Agency monthly plans, or a Founder, Personal, Team, Business or Enterprise license) as shown on your order. "Plan" means a monthly subscription Edition sold on spektly.com.
 1.5 "Authorized User" means (a) for individual Editions, you personally; and (b) for multi-seat Editions, your employees and individual contractors who use the Software solely on your behalf.
 
 2. LICENSE GRANT
 2.1 Subject to your compliance with this Agreement and payment of all applicable fees, Licensor grants you a non-exclusive, non-transferable (except as stated in Section 5), non-sublicensable, revocable license to install, activate, and use the Software in object-code form, on the number of Devices permitted by your Edition, for your own internal business or personal purposes.
 2.2 Individual Editions (Founder, Personal): one (1) Authorized User on one (1) Device at a time. The Pro Edition permits one (1) Authorized User on up to three (3) Devices that user owns or controls.
 2.3 Multi-seat Editions (Team, Business, Enterprise): the number of Seats stated on your order. Each Seat may be used by one Authorized User on one Device at a time. Seats may not be shared, pooled across separate legal entities, or used to provide the Software to third parties.
-2.4 Perpetual versus subscription. If your Edition is perpetual, your right to use the version you licensed does not expire; your right to receive updates lasts through the "updates until" date shown in the Software (or for life, where stated). If your Edition is a subscription, your license ends on the expiration date encoded in your License Key unless renewed.
+2.4 Perpetual versus subscription. If your Edition is perpetual, your right to use the version you licensed does not expire; your right to receive updates lasts through the "updates until" date shown in the Software (or for life, where stated). If your Edition is a subscription (including every Plan), your license lasts while your subscription is active and paid. The Software confirms your Plan online from time to time and stops working if the Plan ends or cannot be confirmed for about ten days. Plans permit the number of Devices stated on the plans page at the time of purchase.
 
 3. ACTIVATION AND LICENSE ENFORCEMENT
 3.1 The Software requires activation with a valid License Key before use. Activation binds a Seat to a Device by means of a cryptographically signed activation record.
@@ -64,6 +64,6 @@ You will comply with all applicable export control and sanctions laws and will n
 16. GENERAL
 16.1 Governing law: This Agreement is governed by the laws of [STATE/COUNTRY], without regard to conflict-of-laws rules. Venue: [COURTS OF COUNTY, STATE] or arbitration under [RULES], as Licensor elects.
 16.2 Entire agreement: This Agreement, together with your order, is the entire agreement regarding the Software and supersedes prior understandings. If any provision is unenforceable, the rest remains in effect. Failure to enforce is not a waiver. You may not assign this Agreement except under Section 5. Licensor may assign it in connection with a merger, acquisition, or sale of assets.
-16.3 Notices and contact: [SUPPORT EMAIL] · [MAILING ADDRESS].
+16.3 Notices and contact: info@spektly.com · [MAILING ADDRESS].
 
 By selecting "I accept" you confirm that you have read this Agreement, understand it, and agree to be bound by it, and that you have authority to bind the entity on whose behalf you accept, if any.

@@ -26,7 +26,20 @@ const TIERS = {
   3: { code: 3, id: 'team',       name: 'Team',       defaultDevices: 5 },
   4: { code: 4, id: 'business',   name: 'Business',   defaultDevices: 25 },
   5: { code: 5, id: 'enterprise', name: 'Enterprise', defaultDevices: 100 },
-  9: { code: 9, id: 'founder',    name: 'Founder / Early Access', defaultDevices: 1 }
+  9: { code: 9, id: 'founder',    name: 'Founder / Early Access', defaultDevices: 1 },
+  10: { code: 10, id: 'solo',      name: 'Solo',       defaultDevices: 1 },
+  11: { code: 11, id: 'creator',   name: 'Creator',    defaultDevices: 2 },
+  12: { code: 12, id: 'studio',    name: 'Studio',     defaultDevices: 5 },
+  13: { code: 13, id: 'agency',    name: 'Agency',     defaultDevices: 10 }
+};
+// Monthly plans sold on spektly.com. Keys for these come from the store (not CH1- keys) and are
+// confirmed online by the activation server; the activation it signs carries an `until` date.
+const PLANS = {
+  solo:    { id: 'solo',    name: 'Solo',    price: 29.99, devices: 1 },
+  creator: { id: 'creator', name: 'Creator', price: 79,    devices: 2 },
+  pro:     { id: 'pro',     name: 'Pro',     price: 189,   devices: 3 },
+  studio:  { id: 'studio',  name: 'Studio',  price: 389,   devices: 5 },
+  agency:  { id: 'agency',  name: 'Agency',  price: 760,   devices: 10 }
 };
 const tierById = id => Object.values(TIERS).find(t => t.id === id);
 
@@ -151,18 +164,32 @@ function signActivation(claims, activationPrivateKey) {
   return b64u(body) + '.' + b64u(sig);
 }
 
-function verifyActivation(token, { activationPublicKey, licensePublicKey, device, key, revoked = [] }) {
+const planKeyHash = key => crypto.createHash('sha256').update('spektly-plan-key\0' + String(key || '').trim()).digest('hex');
+const isCh1Key = key => String(key || '').trim().toUpperCase().startsWith(KEY_PREFIX + '-');
+
+function verifyActivation(token, { activationPublicKey, activationPublicKeys, licensePublicKey, device, key, revoked = [], now = Date.now() }) {
   const [bodyB64, sigB64] = String(token || '').replace(/\s+/g, '').split('.');
   if (!bodyB64 || !sigB64) throw new Error('Activation code is malformed.');
   const body = Buffer.from(bodyB64, 'base64url');
-  if (!crypto.verify(null, Buffer.concat([ACT_DOMAIN, body]), activationPublicKey, Buffer.from(sigB64, 'base64url'))) {
+  const pubs = [...(activationPublicKeys || []), activationPublicKey].filter(Boolean);
+  const msg = Buffer.concat([ACT_DOMAIN, body]), sig = Buffer.from(sigB64, 'base64url');
+  if (!pubs.some(k => { try { return crypto.verify(null, msg, k, sig); } catch (_) { return false; } })) {
     throw new Error('Activation code signature is invalid.');
   }
   const claims = JSON.parse(body.toString('utf8'));
+  if (claims.device !== device) throw new Error('This activation is for a different computer. Activate this device or transfer your license.');
+  if (claims.v === 2 && claims.kind === 'plan') {
+    if (claims.keyHash !== planKeyHash(key)) throw new Error('Activation belongs to a different key.');
+    const plan = PLANS[claims.plan];
+    if (!plan) throw new Error('Unknown plan.');
+    const until = Date.parse(claims.until);
+    if (!(until > now)) { const e = new Error('Spektly needs to go online to confirm your plan. Connect to the internet and reopen Spektly.'); e.code = 'PLAN_UNCONFIRMED'; throw e; }
+    return { plan: plan.id, tier: plan.id, tierName: plan.name, serial: claims.activationId.slice(0, 8).toUpperCase(), maxDevices: claims.maxDevices, subscription: true,
+      until: claims.until, issuedAt: claims.issuedAt, activationId: claims.activationId, activatedAt: claims.activatedAt, licensee: '', updatesUntil: null, expires: null };
+  }
   if (claims.v !== 1) throw new Error('Unsupported activation version.');
   const lic = parseLicense(key, licensePublicKey);
   if (claims.serial !== lic.serial) throw new Error('Activation belongs to a different license.');
-  if (claims.device !== device) throw new Error('This activation is for a different computer. Activate this device or transfer your license.');
   if (revoked.includes(lic.serial)) throw new Error('This license has been revoked. Contact support.');
   return { ...lic, activationId: claims.activationId, activatedAt: claims.activatedAt, licensee: claims.licensee || '' };
 }
@@ -178,7 +205,7 @@ function readRequestCode(code) {
 }
 
 module.exports = {
-  TIERS, tierById, KEY_PREFIX, b32encode, b32decode,
+  TIERS, PLANS, tierById, KEY_PREFIX, planKeyHash, isCh1Key, b32encode, b32decode,
   publicKeyFromRawB64, rawPublicKeyB64,
   signLicense, parseLicense, normalizeKey,
   machineId, deviceFingerprint,

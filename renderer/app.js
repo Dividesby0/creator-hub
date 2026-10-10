@@ -539,11 +539,14 @@ function settings() {
     </div>
     <div class="card"><h2>License</h2>
       ${L.active ? `<table>
-        <tr><td class="muted">Edition</td><td>${esc(L.license.tierName)}</td></tr>
-        <tr><td class="muted">License</td><td><code>${esc(L.license.key)}</code><div class="muted small">Serial #${L.license.serial}</div></td></tr>
-        <tr><td class="muted">Devices allowed</td><td>${L.license.maxDevices}</td></tr>
-        <tr><td class="muted">Updates until</td><td>${L.license.updatesUntil || 'Lifetime'}</td></tr>
-        <tr><td class="muted">Expires</td><td>${L.license.expires || 'Never (perpetual)'}</td></tr>
+        <tr><td class="muted">${L.license.subscription ? 'Plan' : 'Edition'}</td><td>${esc(L.license.tierName)}</td></tr>
+        <tr><td class="muted">Key</td><td><code>${esc(L.license.key)}</code></td></tr>
+        <tr><td class="muted">Computers allowed</td><td>${L.license.maxDevices}</td></tr>
+        ${L.license.subscription
+          ? `<tr><td class="muted">Plan confirmed until</td><td>${esc(new Date(L.license.until).toLocaleDateString())}<div class="muted small">Spektly re-checks your plan online every few hours.</div></td></tr>
+             <tr><td class="muted">Manage plan</td><td><a data-url="https://spektly.com/account/">Billing, upgrades and account</a></td></tr>`
+          : `<tr><td class="muted">Updates until</td><td>${L.license.updatesUntil || 'Lifetime'}</td></tr>
+             <tr><td class="muted">Expires</td><td>${L.license.expires || 'Never (perpetual)'}</td></tr>`}
         <tr><td class="muted">This device</td><td><code>${esc(L.device)}</code></td></tr></table>
         <div class="row" style="margin-top:12px"><button class="btn danger" data-action="deactivate">Deactivate this device</button></div>
         <div class="muted small" style="margin-top:6px">Deactivating frees this seat so you can move your license to another computer.</div>` : ''}

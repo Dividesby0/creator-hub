@@ -45,13 +45,13 @@ const Modal = (() => {
 
 const Theme = (() => {
   const LIST = [
-    { id: 'spektly', name: 'Spektly', bg: '#0e1b2b', a: '#6d92bd', b: '#c9d8ea' },
+    { id: 'spektly', name: 'Dusk', bg: '#0f1440', a: '#9df0ff', b: '#b9a3ff' },
     { id: 'ivory', name: 'Ivory', bg: '#f7f4ee', a: '#4f74a0', b: '#0e1b2b' },
     { id: 'midnight', name: 'Midnight', bg: '#0a0e1c', a: '#7b6cff', b: '#2fd4f0' },
     { id: 'aurora', name: 'Aurora', bg: '#061a1a', a: '#45e0b4', b: '#b99cff' },
     { id: 'ultraviolet', name: 'Ultraviolet', bg: '#12081f', a: '#ff4fc8', b: '#8f7bff' },
     { id: 'ember', name: 'Ember', bg: '#17110e', a: '#ff9f43', b: '#ff5e7e' },
-    { id: 'daylight', name: 'Daylight', bg: '#eef1f7', a: '#2f5bff', b: '#00a3c4' }
+    { id: 'daylight', name: 'Dawn', bg: '#eef2ff', a: '#3550ff', b: '#8b5cf6' }
   ];
   function apply(id) {
     if (!LIST.some(t => t.id === id)) id = 'spektly';

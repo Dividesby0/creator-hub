@@ -1,15 +1,19 @@
-/* Spektly design system (v2.3)
-   Type: Bricolage Grotesque (display, numbers) + Instrument Sans (interface). Both bundled, OFL.
+/* Spektly design system (v2.5, "Day and orbit")
+   Type: Michroma (wordmark, titles, numbers) + Gabarito (interface). Both bundled, OFL.
+   Default look follows spektly.com: a dusk sky, clay buttons that sit on a solid shadow, cyan for "now".
    Themes: spektly (default), ivory, midnight, aurora, ultraviolet, ember, daylight. Set on <html data-theme="...">. */
+@font-face { font-family: 'Michroma'; src: url('fonts/michroma.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Gabarito'; src: url('fonts/gabarito.woff2') format('woff2'); font-weight: 400 900; font-display: swap; }
 @font-face { font-family: 'Bricolage'; src: url('fonts/bricolage.woff2') format('woff2'); font-weight: 200 800; font-stretch: 75% 100%; font-display: swap; }
 @font-face { font-family: 'Instrument'; src: url('fonts/instrument-sans.woff2') format('woff2'); font-weight: 400 700; font-stretch: 75% 100%; font-display: swap; }
 
 /* Brand palette from the Spektly logo kit: midnight navy #0e1b2b, slate blue #6d92bd, warm ivory #f7f4ee. */
 :root, [data-theme="spektly"] {
-  --bg: #0b1624; --bg2: #0e1b2b; --panel: #132337; --panel2: #192c43; --line: #233a55; --line2: #2e4a6a;
-  --text: #eef1f5; --muted: #93a6bd; --accent: #7fa3cc; --accent2: #c9d8ea; --accent-ink: #0b1624;
-  --ok: #4fd1a5; --warn: #f2c260; --bad: #f28b8b; --scrim: rgba(5, 11, 20, .64);
-  --x: #eef1f5; --threads: #c6d0dc; --fx-a: #6d92bd; --fx-b: #c9d8ea; --fx-c: #1d3654;
+  --bg: #0f1440; --bg2: #131a52; --panel: #18205e; --panel2: #1e2770; --line: #2a3486; --line2: #3a45a0;
+  --text: #eef2ff; --muted: #a3abd9; --accent: #9df0ff; --accent2: #b9a3ff; --accent-ink: #10164a;
+  --ok: #2fcb9a; --warn: #ffc93c; --bad: #ff7fae; --scrim: rgba(8, 10, 36, .66);
+  --x: #eef2ff; --threads: #cfd5f5; --fx-a: #6a4fd0; --fx-b: #9df0ff; --fx-c: #2b3a9e;
+  --clay: #0a0e33;
 }
 [data-theme="ivory"] {
   --bg: #f7f4ee; --bg2: #f1ede5; --panel: #fffdf9; --panel2: #f3efe7; --line: #e2dccf; --line2: #d3cbbb;
@@ -42,26 +46,28 @@
   --x: #f6ece4; --threads: #ddd0c5; --fx-a: #ff9f43; --fx-b: #ff5e7e; --fx-c: #6b2a12;
 }
 [data-theme="daylight"] {
-  --bg: #eef1f7; --bg2: #e5e9f2; --panel: #ffffff; --panel2: #f3f5fa; --line: #d9dfeb; --line2: #c5cddd;
-  --text: #121a2c; --muted: #5d6882; --accent: #2f5bff; --accent2: #00a3c4; --accent-ink: #ffffff;
-  --ok: #0f9d6b; --warn: #b7791f; --bad: #dc3d5a; --scrim: rgba(18, 26, 44, .42);
-  --x: #121a2c; --threads: #3a4256; --fx-a: #2f5bff; --fx-b: #00a3c4; --fx-c: #b9c7ff;
+  --bg: #eef2ff; --bg2: #e3e8ff; --panel: #ffffff; --panel2: #f4f6ff; --line: #d3daf7; --line2: #bcc6f0;
+  --text: #10164a; --muted: #59609a; --accent: #3550ff; --accent2: #8b5cf6; --accent-ink: #ffffff;
+  --ok: #158a63; --warn: #a86b00; --bad: #d1306b; --scrim: rgba(16, 22, 74, .40);
+  --x: #10164a; --threads: #3a4170; --fx-a: #3550ff; --fx-b: #8b5cf6; --fx-c: #c9d8ff;
+  --clay: #1f33c2;
 }
 :root {
   --youtube: #ff4e45; --tiktok: #25d9e6; --instagram: #e1306c; --facebook: #1877f2;
   --r-lg: 18px; --r: 12px; --r-sm: 9px;
-  --display: 'Bricolage', 'Instrument', -apple-system, 'Segoe UI', sans-serif;
-  --ui: 'Instrument', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --display: 'Michroma', 'Gabarito', -apple-system, 'Segoe UI', sans-serif;
+  --ui: 'Gabarito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --clay: color-mix(in srgb, var(--accent) 55%, #000);
   font-family: var(--ui); font-size: 14px; line-height: 1.5; color: var(--text); background: var(--bg);
   -webkit-font-smoothing: antialiased;
 }
 * { box-sizing: border-box; }
 html, body { background: var(--bg); }
-body { margin: 0; height: 100vh; display: flex; overflow: hidden; }
+body { margin: 0; height: 100vh; display: flex; overflow: hidden; background: linear-gradient(180deg, var(--bg2), var(--bg) 40%); }
 a { color: var(--accent); cursor: pointer; text-decoration: none; }
 a:hover { text-decoration: underline; text-underline-offset: 3px; }
-h1 { font-family: var(--display); font-size: 30px; line-height: 1.1; margin: 0 0 6px; font-weight: 650; letter-spacing: -0.02em; font-stretch: 88%; }
-h2 { font-family: var(--display); font-size: 18px; margin: 0 0 12px; font-weight: 600; letter-spacing: -0.01em; }
+h1 { font-family: var(--display); font-size: 24px; line-height: 1.2; margin: 0 0 8px; font-weight: 400; letter-spacing: -0.01em; }
+h2 { font-family: var(--ui); font-size: 19px; margin: 0 0 12px; font-weight: 700; letter-spacing: -0.01em; }
 h3 { font-size: 14px; margin: 0 0 8px; font-weight: 650; }
 .muted { color: var(--muted); }
 .small { font-size: 12.5px; }
@@ -70,7 +76,7 @@ h3 { font-size: 14px; margin: 0 0 8px; font-weight: 650; }
 
 /* ---------- sidebar ---------- */
 nav { width: 228px; background: var(--bg2); border-right: 1px solid var(--line); padding: 20px 14px; display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
-nav .brand { font-family: var(--display); font-weight: 700; font-size: 19px; letter-spacing: -0.02em; padding: 2px 10px 22px; display: flex; align-items: center; gap: 10px; }
+nav .brand { font-family: var(--display); font-weight: 400; font-size: 17px; letter-spacing: 0; padding: 2px 10px 22px; display: flex; align-items: center; gap: 10px; }
 nav .brand .mark { width: 28px; height: 28px; }
 nav button { all: unset; padding: 9px 12px; border-radius: var(--r-sm); color: var(--muted); cursor: pointer; display: flex; gap: 11px; align-items: center; font-weight: 500; position: relative; }
 nav button svg { width: 18px; height: 18px; flex-shrink: 0; opacity: .85; }
@@ -88,19 +94,20 @@ main { flex: 1; overflow-y: auto; padding: 32px 38px 70px; }
 .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 22px; gap: 16px; flex-wrap: wrap; }
 
 /* ---------- surfaces ---------- */
-.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 20px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 22px; padding: 20px; box-shadow: 0 5px 0 var(--line); }
 .grid { display: grid; gap: 14px; }
 .g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 @media (max-width: 1150px) { .g4 { grid-template-columns: repeat(2, 1fr); } .g3 { grid-template-columns: repeat(2, 1fr); } }
-.stat .n, .kpi .kv { font-family: var(--display); font-size: 30px; font-weight: 650; margin: 4px 0; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; font-stretch: 85%; }
+.stat .n, .kpi .kv { font-family: var(--display); font-size: 24px; font-weight: 400; margin: 6px 0; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 
 /* ---------- controls ---------- */
 button.btn, .btn { background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px 15px; cursor: pointer; font: inherit; font-weight: 550; transition: border-color .15s, background .15s, transform .08s; }
 .btn:hover { border-color: var(--line2); }
 .btn:active { transform: translateY(1px); }
-.btn.primary { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 70%, var(--accent2))); border-color: transparent; color: var(--accent-ink); font-weight: 650; }
+.btn.primary { background: var(--accent); border-color: transparent; color: var(--accent-ink); font-weight: 700; border-radius: 14px; box-shadow: 0 4px 0 var(--clay); margin-bottom: 4px; }
+.btn.primary:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--clay); }
 .btn.primary:hover { filter: brightness(1.08); }
 .btn.danger { color: var(--bad); }
 .btn.sm { padding: 4px 10px; font-size: 12.5px; }
@@ -217,7 +224,7 @@ body.fx-on #bgfx { opacity: 1; }
 #splash canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 #splash .lockup { position: relative; text-align: center; animation: lockIn 1s cubic-bezier(.2,.8,.2,1) both; }
 #splash .lockup .mark { width: 74px; height: 74px; margin: 0 auto 14px; display: block; }
-#splash .lockup .word { font-family: var(--display); font-size: 46px; font-weight: 700; letter-spacing: -0.035em; font-stretch: 88%; text-transform: lowercase; }
+#splash .lockup .word { font-family: var(--display); font-size: 40px; font-weight: 400; letter-spacing: -0.01em; text-transform: lowercase; }
 #splash .lockup .sub { color: var(--muted); margin-top: 4px; }
 @keyframes lockIn { from { opacity: 0; transform: translateY(10px) scale(.97); filter: blur(4px); } }
 .mark { object-fit: contain; display: inline-block; }

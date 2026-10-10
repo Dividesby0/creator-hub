@@ -187,7 +187,13 @@ function createWindow() {
 }
 
 function loadForLicenseState() {
-  const active = license.status().active;
+  const st = license.status();
+  const active = st.active;
+  // A plan whose last online check is too old: try to confirm it before showing the activation screen.
+  if (!active && st.needsOnline && !loadForLicenseState.retrying) {
+    loadForLicenseState.retrying = true;
+    license.revalidate().finally(() => { loadForLicenseState.retrying = false; if (license.status().active) loadForLicenseState(); });
+  }
   win.loadFile(path.join(__dirname, 'renderer', active ? 'index.html' : 'license.html'));
   if (active) startEngine(); else engine?.stop();
 }
@@ -444,6 +450,7 @@ app.whenReady().then(async () => {
   setTimeout(() => cleanupOldCopies().catch(e => store.addLog('warn', 'Cleanup: ' + e.message)), 4000);
   setTimeout(() => runUpdateCheck(), 8000);
   setInterval(() => runUpdateCheck(), 6 * 3600e3);
+  setInterval(() => { const was = license.status().active; license.revalidate().then(() => { if (license.status().active !== was) loadForLicenseState(); }); }, 3 * 3600e3);
 });
 
 app.on('second-instance', () => { if (win) { win.show(); win.focus(); } });

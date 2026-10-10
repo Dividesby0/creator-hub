@@ -7,39 +7,82 @@
   <link rel="icon" href="brand/favicon.png">
   <link rel="stylesheet" href="styles.css">
   <script src="ui.js"></script>
+  <style>
+    body.act { display: block; overflow-y: auto; background: linear-gradient(180deg, #10164a 0%, #2b3a9e 46%, #6a4fd0 78%, #b9a3ff 100%); color: #eef2ff; }
+    .act main { max-width: 1080px; margin: 0 auto; padding: 40px 40px 60px; display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 48px; align-items: start; overflow: visible; }
+    .act .word { font-family: var(--display); font-size: 22px; }
+    .act h1 { font-size: 34px; line-height: 1.15; margin: 34px 0 14px; color: #eef2ff; }
+    .act .lede { font-size: 17px; line-height: 1.55; color: #c9d0f5; max-width: 440px; margin: 0 0 26px; }
+    .act .orbit { position: relative; width: 300px; height: 300px; margin: 48px 0 0 10px; }
+    .act .orbit .ring { position: absolute; inset: 22px; border-radius: 50%; box-shadow: inset 0 0 0 14px rgba(255,255,255,.08); }
+    .act .orbit .core { position: absolute; left: 95px; top: 95px; width: 110px; height: 110px; border-radius: 50%; background: radial-gradient(circle at 32% 28%, #fff, #e3e8ff 50%, #b9c3f2); color: #10164a; display: grid; place-items: center; text-align: center; font-family: var(--display); font-size: 13px; box-shadow: 0 18px 30px rgba(0,0,0,.25); }
+    .act .orbit i { position: absolute; width: 46px; height: 46px; border-radius: 50%; box-shadow: 0 10px 16px rgba(0,0,0,.25); }
+    .act .panel { background: #eef2ff; color: #10164a; border-radius: 26px; padding: 26px; box-shadow: 0 8px 0 #0a0e33; }
+    .act .panel h2 { color: #10164a; font-size: 18px; margin: 0 0 8px; }
+    .act .panel .muted { color: #59609a; }
+    .act .panel textarea, .act .panel input[type=email] { background: #fff; color: #10164a; border-color: #c9d0f0; }
+    .act .step + .step { margin-top: 22px; padding-top: 20px; border-top: 1px solid #d3daf7; }
+    .act .eula { max-height: 120px; overflow: auto; font-size: 12px; background: #fff; border: 1px solid #d3daf7; border-radius: 12px; padding: 10px 12px; white-space: pre-wrap; color: #3a4170; }
+    .act .clay { display: inline-flex; align-items: center; justify-content: center; padding: 14px 22px; border-radius: 16px; font-weight: 700; font-size: 15px; text-decoration: none; cursor: pointer; border: 0; font-family: var(--ui); }
+    .act .clay.cyan { background: #9df0ff; color: #10164a; box-shadow: 0 5px 0 #4fb6c9; }
+    .act .clay.ink { background: #10164a; color: #eef2ff; box-shadow: 0 5px 0 #05072a; width: 100%; }
+    .act .clay:active { transform: translateY(3px); box-shadow: none; }
+    .act .clay:disabled { opacity: .55; cursor: default; }
+    .act .note { background: #ffe3ee; color: #8a1440; border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; font-size: 14px; }
+    .act details summary { cursor: pointer; color: #3550ff; font-size: 13.5px; }
+    .act code { font-size: 12px; }
+    .act .ok { color: #158a63; } .act .bad { color: #d1306b; }
+    @media (max-width: 860px) { .act main { grid-template-columns: 1fr; } .act .orbit { display: none; } }
+  </style>
 </head>
-<body class="fx-on">
-  <canvas id="bgfx"></canvas>
-  <main style="max-width:760px;margin:0 auto;position:relative;z-index:1">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><span id="licMark"></span><span style="font-family:var(--display);font-size:22px;font-weight:700;letter-spacing:-0.02em">spektly</span></div>
-    <div class="header"><div><h1>Activate Spektly</h1><div class="muted">Enter your license key to get started.</div></div></div>
-    <div id="err"></div>
-    <div class="card" style="margin-bottom:14px">
-      <h2>1. License Agreement</h2>
-      <div class="eula" id="eula">Loading…</div>
-      <label class="check" style="margin-top:12px"><input type="checkbox" id="accept"> I have read and accept the Spektly End User License Agreement.</label>
-    </div>
-    <div class="card" style="margin-bottom:14px">
-      <h2>2. License key</h2>
-      <label class="field"><span>Paste the key exactly as you received it (starts with CH1-)</span><textarea id="key" rows="3" spellcheck="false" style="min-height:70px;font-family:ui-monospace,Menlo,Consolas,monospace"></textarea></label>
-      <div id="keyInfo" class="muted small"></div>
-    </div>
-    <div class="card" style="margin-bottom:14px">
-      <h2>3. Activate</h2>
-      <div class="row"><button class="btn primary" id="online">Activate online</button><span class="muted small" id="onlineNote"></span></div>
-      <details style="margin-top:16px"><summary>No internet on this computer, or online activation unavailable? Activate offline</summary>
-        <div style="margin-top:12px">
-          <p class="muted">Send this request code to support. You'll receive an activation code back.</p>
-          <div class="row"><button class="btn" id="genReq">Generate request code</button><button class="btn" id="copyReq" hidden>Copy</button></div>
-          <pre class="code" id="req" hidden></pre>
-          <label class="field" style="margin-top:12px"><span>Activation code from support</span><textarea id="act" rows="3" spellcheck="false" style="min-height:70px;font-family:ui-monospace,Menlo,Consolas,monospace"></textarea></label>
-          <button class="btn primary" id="offline">Activate offline</button>
-        </div>
-      </details>
-      <div class="muted small" style="margin-top:14px">This device: <code id="device"></code></div>
-    </div>
+<body class="act">
+  <main>
+    <section>
+      <span class="word">spektly</span>
+      <h1>Pick a plan, paste your key, and your week starts posting.</h1>
+      <p class="lede">Spektly needs an active plan to run. After checkout you get a key by email. Paste it here and this computer is ready.</p>
+      <a class="clay cyan" href="https://spektly.com/#plans" target="_blank" rel="noopener">See plans, from $29.99 a month</a>
+      <div class="orbit" aria-hidden="true">
+        <div class="ring"></div>
+        <div class="core">18:00</div>
+        <i style="left:127px;top:0;background:radial-gradient(circle at 32% 28%,#ffb089,#ff7a3d 55%,#d9531a)"></i>
+        <i style="left:242px;top:66px;background:radial-gradient(circle at 32% 28%,#8e9cff,#3550ff 55%,#1f33c2)"></i>
+        <i style="left:242px;top:188px;background:radial-gradient(circle at 32% 28%,#ffb3d2,#ff6fa8 55%,#d9437e)"></i>
+        <i style="left:127px;top:254px;background:radial-gradient(circle at 32% 28%,#7cebc6,#2fcb9a 55%,#1c9873)"></i>
+        <i style="left:12px;top:188px;background:radial-gradient(circle at 32% 28%,#ffe08a,#ffc93c 55%,#d9a11a)"></i>
+        <i style="left:12px;top:66px;background:radial-gradient(circle at 32% 28%,#c4a9ff,#8b5cf6 55%,#6237c9)"></i>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div id="err"></div>
+      <div class="step">
+        <h2>Your key</h2>
+        <label class="field"><span class="muted">Paste it exactly as it appears in your purchase email.</span><textarea id="key" rows="3" spellcheck="false" style="min-height:64px;font-family:ui-monospace,Menlo,Consolas,monospace"></textarea></label>
+        <div id="keyInfo" class="small"></div>
+      </div>
+      <div class="step">
+        <h2>License agreement</h2>
+        <div class="eula" id="eula">Loading…</div>
+        <label class="check" style="margin-top:10px"><input type="checkbox" id="accept"> I accept the Spektly License Agreement.</label>
+      </div>
+      <div class="step">
+        <button class="clay ink" id="online">Activate this computer</button>
+        <div class="muted small" id="onlineNote" style="margin-top:8px"></div>
+        <p class="small muted" style="margin:14px 0 0">No account yet? <a href="https://spektly.com/account/" target="_blank" rel="noopener">Create one</a> to keep your keys in one place, get plan updates in the app and enter the monthly customer giveaways.</p>
+        <details style="margin-top:14px"><summary>Activate without internet (older CH1 keys only)</summary>
+          <div style="margin-top:10px">
+            <p class="muted small">Send this request code to info@spektly.com. You'll get an activation code back.</p>
+            <div class="row"><button class="btn sm" id="genReq">Make request code</button><button class="btn sm" id="copyReq" hidden>Copy</button></div>
+            <pre class="code" id="req" hidden></pre>
+            <label class="field" style="margin-top:10px"><span class="muted">Activation code</span><textarea id="act" rows="3" spellcheck="false" style="min-height:64px;font-family:ui-monospace,Menlo,Consolas,monospace"></textarea></label>
+            <button class="btn sm" id="offline">Activate offline</button>
+          </div>
+        </details>
+        <div class="muted small" style="margin-top:14px">This computer: <code id="device"></code></div>
+      </div>
+    </section>
   </main>
-  <script src="fx.js"></script>
   <script src="license.js"></script>
 </body>
 </html>
