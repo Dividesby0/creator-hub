@@ -7,6 +7,12 @@
 // private half never leaves the data folder (outside public_html). The app ships the public half.
 declare(strict_types=1);
 if (!defined('SPEKTLY_RELAY')) { http_response_code(404); exit; }
+// Hosts without the sodium extension: pure-PHP Ed25519 from paragonie/sodium_compat (ISC licence),
+// uploaded next to the secrets as spektly-lib/sodium_compat (src/, lib/ and autoload.php).
+if (!function_exists('sodium_crypto_sign_keypair')) {
+  $sc = dirname(__DIR__) . '/spektly-lib/sodium_compat/autoload.php';
+  if (is_file($sc)) require_once $sc;
+}
 
 const LIC_DOMAIN = "CREATORHUB-LICENSE-V1\0";
 const ACT_DOMAIN = "CREATORHUB-ACTIVATION-V1\0";
