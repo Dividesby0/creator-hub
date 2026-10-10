@@ -6,7 +6,9 @@ const fs = require('fs'), os = require('os'), path = require('path'), http = req
 const { spawn, spawnSync } = require('child_process');
 const core = require('../src/license/core');
 const { LicenseManager } = require('../src/license/manager');
-const hasPhp = spawnSync('php', ['-v']).status === 0;
+const phpOk = spawnSync('php', ['-r', "echo extension_loaded('pdo_sqlite') && extension_loaded('curl') ? 'y' : 'n';"]);
+const hasPhp = phpOk.status === 0 && String(phpOk.stdout) === 'y';
+const nativeSodium = hasPhp && String(spawnSync('php', ['-r', "echo function_exists('sodium_crypto_sign_detached') ? 'y' : 'n';"]).stdout) === 'y';
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'lic-'));
 const box = { encrypt: s => 'x:' + Buffer.from(s).toString('base64'), decrypt: s => Buffer.from(s.slice(2), 'base64').toString() };
 const listen = srv => new Promise(r => srv.listen(0, '127.0.0.1', () => r(srv.address().port)));
@@ -27,7 +29,7 @@ test('core: plan activation stops working at its until date', () => {
 });
 
 for (const crypto_ of ['sodium', 'compat'])
-test(`licensing server (${crypto_}): buy links, plan keys via Creem, CH1 seats, cancellation locks the app`, { skip: !hasPhp && 'php not installed' }, async () => {
+test(`licensing server (${crypto_}): buy links, plan keys via Creem, CH1 seats, cancellation locks the app`, { skip: !hasPhp && 'php with pdo_sqlite and curl not installed' }, async () => {
   // fake Creem
   const lic = { key: 'PLAN-KEY-CREATOR-0001', product_id: 'prod_creator', status: 'active', activation_limit: 2, expires_at: null, instances: [] };
   const creemSeen = [];
@@ -55,7 +57,7 @@ test(`licensing server (${crypto_}): buy links, plan keys via Creem, CH1 seats, 
   const L = crypto.generateKeyPairSync('ed25519');
   const ch1 = core.signLicense({ tier: 10, maxDevices: 1, serial: 4242 }, L.privateKey);
   const dir = tmp(), secrets = path.join(dir, 'secrets.php'), data = path.join(dir, 'data');
-  fs.writeFileSync(secrets, `<?php return ['FORCE_HTTPS' => false, 'DATA_DIR' => '${data}', 'LICENSE_PUBLIC_KEY' => '${core.rawPublicKeyB64(L.publicKey)}', 'CREEM_API_KEY' => 'creem_test_key',
+  fs.writeFileSync(secrets, `<?php return ['FORCE_HTTPS' => false, 'DATA_DIR' => '${data.replace(/\\/g, '/')}', 'LICENSE_PUBLIC_KEY' => '${core.rawPublicKeyB64(L.publicKey)}', 'CREEM_API_KEY' => 'creem_test_key',
     'CREEM_PRODUCTS' => ['prod_creator' => 'creator'], 'BUY_URLS' => ['solo' => 'https://www.creem.io/test/payment/prod_solo'], 'UPSTREAM' => ['api.creem.io' => 'http://127.0.0.1:${cport}']];`);
   const portSrv = http.createServer(); const pport = await listen(portSrv); portSrv.close();
   const docroot = path.join(__dirname, '..', 'vendor', 'signin-relay-php', 'public');
@@ -65,7 +67,7 @@ test(`licensing server (${crypto_}): buy links, plan keys via Creem, CH1 seats, 
   try {
     for (let i = 0; i < 50; i++) { try { await get(S + '/health'); break; } catch (_) { await new Promise(r => setTimeout(r, 100)); } }
     const health = JSON.parse((await get(S + '/health')).body);
-    assert.deepStrictEqual({ ...health.licensing, php: undefined }, { crypto: crypto_, sqlite: true, php: undefined, keys: true, plans: true, checkout: ['solo'] });
+    assert.deepStrictEqual({ ...health.licensing, php: undefined }, { crypto: crypto_ === 'sodium' && !nativeSodium ? 'compat' : crypto_, sqlite: true, php: undefined, keys: true, plans: true, checkout: ['solo'] });
     assert.strictEqual((await get(S + '/license.php')).status, 404);
     // buy links
     const b1 = await get(S + '/buy/solo'); assert.strictEqual(b1.status, 302); assert.strictEqual(b1.headers.location, 'https://www.creem.io/test/payment/prod_solo');
@@ -74,7 +76,7 @@ test(`licensing server (${crypto_}): buy links, plan keys via Creem, CH1 seats, 
     // server-generated activation key, stable across calls, private half stays in the data folder
     const k1 = JSON.parse((await get(S + '/v1/activation-key')).body).activationPublicKey;
     assert.strictEqual(JSON.parse((await get(S + '/v1/activation-key')).body).activationPublicKey, k1);
-    assert.strictEqual(fs.statSync(path.join(data, 'activation-key.bin')).mode & 0o077, 0);
+    if (process.platform !== 'win32') assert.strictEqual(fs.statSync(path.join(data, 'activation-key.bin')).mode & 0o077, 0);
     const keys = { licensePublicKey: L.publicKey, activationPublicKey: null, activationPublicKeys: [core.publicKeyFromRawB64(k1)], activationServer: S, revoked: [] };
     const mgr = n => new LicenseManager({ dir: tmp(), box, device: dev(n), keys });
 
@@ -124,7 +126,7 @@ test(`licensing server (${crypto_}): buy links, plan keys via Creem, CH1 seats, 
     assert.strictEqual(await post({ email: 'nope' }), 'https://spektly.com/account/?error=email');
     assert.strictEqual(await post({ email: 'Fan@Example.com', name: 'Fan', key: lic.key, giveaways: '1', ref: 'ord_123' }), 'https://spektly.com/account/?joined=1');
     assert.strictEqual(await post({ email: 'fan@example.com', key: ch1, updates: '1' }), 'https://spektly.com/account/?joined=1');
-    const rows = JSON.parse(spawnSync('php', ['-r', `$p=new PDO('sqlite:${data}/licenses.sqlite'); echo json_encode([$p->query('SELECT email,name,giveaways,updates,ref FROM customers')->fetchAll(PDO::FETCH_ASSOC), $p->query('SELECT lic FROM customer_keys ORDER BY lic')->fetchAll(PDO::FETCH_COLUMN)]);`]).stdout.toString());
+    const rows = JSON.parse(spawnSync('php', ['-r', `$p=new PDO('sqlite:${data.replace(/\\/g, '/')}/licenses.sqlite'); echo json_encode([$p->query('SELECT email,name,giveaways,updates,ref FROM customers')->fetchAll(PDO::FETCH_ASSOC), $p->query('SELECT lic FROM customer_keys ORDER BY lic')->fetchAll(PDO::FETCH_COLUMN)]);`]).stdout.toString());
     assert.deepStrictEqual(rows[0], [{ email: 'fan@example.com', name: 'Fan', giveaways: 0, updates: 1, ref: 'ord_123' }]);
     assert.deepStrictEqual(rows[1], ['ch1:4242', 'creem:' + core.planKeyHash(lic.key)]);
 
