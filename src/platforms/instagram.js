@@ -38,7 +38,7 @@ module.exports = {
 
   async connect(ctx) {
     const token = ctx.account.config.accessToken;
-    if (!token && require('../oauth/oneclick').available('instagram')) return require('../oauth/flows').instagram(ctx);
+    if ((ctx.mode === 'oneclick' || (!token && ctx.mode !== 'own')) && require('../oauth/oneclick').available('instagram')) return require('../oauth/flows').instagram(ctx);
     if (!token) throw new Error('Paste a long-lived access token first.');
     const fields = (ctx.account.config.apiHost || 'graph.instagram.com') === 'graph.instagram.com' ? 'user_id,username' : 'id,username';
     const id = ctx.account.config.userId || 'me';

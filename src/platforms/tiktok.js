@@ -79,7 +79,7 @@ module.exports = {
     // and a secret. A username or handle typed into the key box (e.g. "decrypt443") is ignored.
     const ownKeys = looksLikeTikTokKey(clientKey) && String(clientKey).trim() !== oneclick.appId('tiktok')
       && !!String(clientSecret || '').trim();
-    if (!ownKeys && oneclick.available('tiktok')) return flows.tiktok(ctx);
+    if ((ctx.mode === 'oneclick' || (!ownKeys && ctx.mode !== 'own')) && oneclick.available('tiktok')) return flows.tiktok(ctx);
     if (clientKey && !looksLikeTikTokKey(clientKey)) throw new Error(`"${String(clientKey).trim()}" is not a TikTok client key. Client keys start with "aw" (or "sbaw" for a sandbox) and come from developers.tiktok.com.`);
     if (!clientKey || !clientSecret) throw new Error('Enter the Client key and Client secret first.');
     const verifier = randomVerifier();

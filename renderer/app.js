@@ -627,13 +627,14 @@ document.addEventListener('click', async e => {
       const form = $(`form[data-account="${pid}"]`);
       const values = Object.fromEntries(new FormData(form).entries());
       await run(() => hub.accounts.save(pid, values));
-      if (S.accounts.find(a => a.id === pid).auth === 'oauth') toast('Your browser will open so you can sign in.');
-      try { const p = await run(() => hub.accounts.connect(pid)); toast(`Connected as ${p.name}.`); Modal.closeById('assist'); } catch (_) {}
+      if (S.accounts.find(a => a.id === pid).auth === 'oauth') toast('A sign-in window will open.');
+      try { const p = await run(() => hub.accounts.connect(pid, { mode: 'own' })); toast(`Connected as ${p.name}.`); Modal.closeById('assist'); } catch (_) {}
       await refresh(); break;
     }
     case 'connectOneClick': {
-      toast('Your browser will open. Sign in and click Allow.');
-      try { const p = await run(() => hub.accounts.connect(pid)); toast(`Connected as ${p.name}.`); } catch (_) {}
+      const prov = S.accounts.find(a => a.id === pid)?.provider;
+      toast(prov === 'google' ? 'Your browser will open. Sign in and click Allow.' : `A ${pname(pid)} sign-in window will open. Sign in and click Allow.`);
+      try { const p = await run(() => hub.accounts.connect(pid, { mode: 'oneclick' })); toast(`Connected as ${p.name}.`); } catch (_) {}
       await refresh(); break;
     }
     case 'wizNext': wizStep = Math.min(WIZ_STEPS - 1, wizStep + 1); renderWizard(); break;

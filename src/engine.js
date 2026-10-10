@@ -72,9 +72,11 @@ class Engine {
     };
   }
 
-  async connect(pid) {
+  /** @param {{mode?: 'oneclick'|'own'}} [opts] oneclick = the Connect button; own = the "own developer keys" form */
+  async connect(pid, opts = {}) {
     const p = this.platforms[pid];
     const ctx = this._ctx(pid);
+    ctx.mode = opts && opts.mode || null;
     try {
       const { secret, profile } = await p.connect(ctx);
       const a = this.store.getAccount(pid);

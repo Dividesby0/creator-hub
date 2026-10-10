@@ -29,7 +29,7 @@ module.exports = {
 
   async connect(ctx) {
     const { pageId, accessToken } = ctx.account.config;
-    if (!accessToken && require('../oauth/oneclick').available('facebook')) return require('../oauth/flows').facebook(ctx);
+    if ((ctx.mode === 'oneclick' || (!accessToken && ctx.mode !== 'own')) && require('../oauth/oneclick').available('facebook')) return require('../oauth/flows').facebook(ctx);
     if (!pageId || !accessToken) throw new Error('Enter the Page ID and a Page access token first.');
     const { body } = await request('Facebook', `${G}/${pageId}?fields=name&access_token=${encodeURIComponent(accessToken)}`);
     return { secret: { accessToken }, profile: { name: body.name, id: pageId } };

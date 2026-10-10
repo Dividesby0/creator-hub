@@ -251,7 +251,7 @@ function registerIpc() {
   });
 
   handle('accounts:save', (pid, values) => engine.saveAccountConfig(pid, values));
-  handle('accounts:connect', pid => engine.connect(pid));
+  handle('accounts:connect', (pid, opts) => engine.connect(pid, opts));
   handle('accounts:disconnect', pid => engine.disconnect(pid));
 
   handle('settings:update', patch => {

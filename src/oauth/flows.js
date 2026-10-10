@@ -52,7 +52,7 @@ async function tiktokRefresh(s) {
 
 async function instagram(ctx) {
   const scope = 'instagram_business_basic,instagram_business_content_publish,instagram_business_manage_insights';
-  const { code, redirectUri } = await oc.relaySignIn('instagram', { openExternal: ctx.openExternal,
+  const { code, redirectUri } = await oc.relaySignIn('instagram', { openExternal: inApp(ctx, 'Instagram'),
     buildUrl: ({ redirectUri, state }) => 'https://www.instagram.com/oauth/authorize?' + new URLSearchParams({ client_id: oc.appId('instagram'), redirect_uri: redirectUri, response_type: 'code', scope, state }) });
   const t = await oc.relayToken('instagram', { code, redirect_uri: redirectUri }); // relay returns the 60-day token
   const { body } = await request('Instagram', `https://graph.instagram.com/me?fields=user_id,username&access_token=${enc(t.access_token)}`);
@@ -61,7 +61,7 @@ async function instagram(ctx) {
 
 async function threads(ctx) {
   const scope = 'threads_basic,threads_content_publish,threads_manage_insights';
-  const { code, redirectUri } = await oc.relaySignIn('threads', { openExternal: ctx.openExternal,
+  const { code, redirectUri } = await oc.relaySignIn('threads', { openExternal: inApp(ctx, 'Threads'),
     buildUrl: ({ redirectUri, state }) => 'https://threads.net/oauth/authorize?' + new URLSearchParams({ client_id: oc.appId('threads'), redirect_uri: redirectUri, scope, response_type: 'code', state }) });
   const t = await oc.relayToken('threads', { code, redirect_uri: redirectUri });
   const { body } = await request('Threads', `https://graph.threads.net/v1.0/me?fields=id,username&access_token=${enc(t.access_token)}`);
@@ -70,7 +70,7 @@ async function threads(ctx) {
 
 async function facebook(ctx) {
   const scope = 'pages_show_list,pages_manage_posts,pages_read_engagement,read_insights';
-  const { code, redirectUri } = await oc.relaySignIn('facebook', { openExternal: ctx.openExternal,
+  const { code, redirectUri } = await oc.relaySignIn('facebook', { openExternal: inApp(ctx, 'Facebook'),
     buildUrl: ({ redirectUri, state }) => 'https://www.facebook.com/v23.0/dialog/oauth?' + new URLSearchParams({ client_id: oc.appId('facebook'), redirect_uri: redirectUri, state, scope, response_type: 'code' }) });
   const t = await oc.relayToken('facebook', { code, redirect_uri: redirectUri }); // long-lived user token
   const { body } = await request('Facebook', `${FB}/me/accounts?fields=id,name,access_token&access_token=${enc(t.access_token)}`);

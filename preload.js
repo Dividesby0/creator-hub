@@ -31,7 +31,7 @@ contextBridge.exposeInMainWorld('hub', {
   importBatch: () => call('batch:import'),
   accounts: {
     save: (pid, values) => call('accounts:save', pid, values),
-    connect: pid => call('accounts:connect', pid),
+    connect: (pid, opts) => call('accounts:connect', pid, opts),
     disconnect: pid => call('accounts:disconnect', pid)
   },
   settings: { update: patch => call('settings:update', patch) },
