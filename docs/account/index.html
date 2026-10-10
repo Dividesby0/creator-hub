@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Your Spektly account</title><meta name="description" content="Create your Spektly account to keep your plan keys together, get plan updates in the app and enter the monthly customer giveaways.">
+<link rel="icon" href="../favicon.ico" sizes="any"><link rel="apple-touch-icon" href="../assets/apple-touch-icon.png"><meta name="theme-color" content="#10164a">
+<meta property="og:title" content="Your Spektly account"><meta property="og:description" content="Create your Spektly account to keep your plan keys together, get plan updates in the app and enter the monthly customer giveaways."><meta property="og:image" content="https://spektly.com/assets/og-logo.png">
+<link rel="preload" href="../assets/gabarito.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="../assets/michroma.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../assets/site.css">
+</head><body>
+<header class="top"><div class="wrap"><a class="word" href="../">spektly</a><span class="clock" id="clock" aria-hidden="true"></span>
+<nav><a class="hide-sm" href="../#how">How it works</a><a href="../#plans">Plans</a><a class="hide-sm" href="../account/">Account</a><a class="clay now sm" href="../#download">Download</a></nav></div></header>
+
+<main class="doc"><div class="wrap">
+  <div class="num" aria-hidden="true">07<small>Account</small></div>
+  <div>
+  <div id="flash"></div>
+  <h1>Your Spektly account.</h1>
+  <p>Bought a plan as a guest? Add your email here. Your account keeps every key you buy in one place, lets us send plan and billing updates to the app, and enters you in the monthly customer giveaways if you want in.</p>
+  <form class="form" method="post" action="https://signin.spektly.com/v1/account/signup">
+    <label>Email<input type="email" name="email" required autocomplete="email" placeholder="you@example.com"></label>
+    <label>Name <span style="font-weight:400;color:var(--soft)">(optional)</span><input type="text" name="name" autocomplete="name"></label>
+    <label>Plan key <span style="font-weight:400;color:var(--soft)">(optional, from your purchase email)</span><input type="text" name="key" spellcheck="false" autocomplete="off"></label>
+    <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <input type="hidden" name="ref" id="ref">
+    <label class="check"><input type="checkbox" name="updates" value="1" checked> Email me about my plan, new features and updates.</label>
+    <label class="check"><input type="checkbox" name="giveaways" value="1"> Enter me in the monthly customer giveaways. <a href="../terms/#giveaways">Rules</a></label>
+    <button class="clay ink" type="submit">Create my account</button>
+    <p style="margin:0;font-size:14px;color:var(--soft)">We use your email only for Spektly. See the <a href="../privacy/#accounts">privacy policy</a>.</p>
+  </form>
+  <h2>Billing, receipts and cancelling</h2>
+  <p>Your purchase email has a link to manage your plan: change it, update your card, download receipts or cancel. Lost it? Email <a href="mailto:info@spektly.com">info@spektly.com</a> from the address you paid with.</p>
+  <h2>Moving to a new computer</h2>
+  <p>In Spektly, open Settings, then License, and click Deactivate this computer. Then paste your key on the new one.</p>
+  </div>
+</div></main>
+<footer class="foot"><div class="wrap"><span class="word">spektly</span>
+<a href="../#plans">Plans</a><a href="../#download">Download</a><a href="../account/">Account</a><a href="../privacy/">Privacy</a><a href="../terms/">Terms</a><a href="mailto:info@spektly.com">info@spektly.com</a>
+<span style="flex-basis:100%">Spektly by Decrypt443. Platform names and logos belong to their owners and appear only to show which services Spektly connects to.</span></div></footer>
+<script src="../assets/site.js" defer></script>
+</body></html>

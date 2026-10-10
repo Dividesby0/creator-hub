@@ -1,6 +1,9 @@
 {
   "licensePublicKey": "iV16nS7U++0H/wxXOPP31C+6m2uekUEWJZ8BQdURWmU=",
   "activationPublicKey": "SNilw/Z/4+3gjXTllukZyz0VqGx9sjm48k554dQxhOI=",
-  "activationServer": "",
-  "revoked": []
+  "activationServer": "https://signin.spektly.com",
+  "revoked": [],
+  "activationPublicKeys": [
+    "u1FRVHOu4VO302kiYxbBwRqJGNcHpDKbPzBopV2z3Qs="
+  ]
 }
