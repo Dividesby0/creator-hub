@@ -96,6 +96,10 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 try {
   if ($method === 'GET' && str_starts_with($path, '/v1/oauth/cb/')) callback(basename($path));
   elseif ($method === 'POST' && str_starts_with($path, '/v1/oauth/token/')) token(basename($path));
+  // Meta app callbacks. The relay stores no user data, so there is nothing to remove; Spektly keeps
+  // tokens only on the user's own computer (Disconnect in the app deletes them).
+  elseif ($method === 'POST' && $path === '/v1/meta/deauthorize') out(['ok' => true]);
+  elseif ($method === 'POST' && $path === '/v1/meta/data-deletion') { $code = bin2hex(random_bytes(8)); out(['url' => 'https://spektly.com/privacy/#data-deletion', 'confirmation_code' => $code]); }
   elseif ($path === '/health') out(['ok' => true, 'platforms' => array_values(array_filter(PROVIDERS, fn($p) => sec(SECRET_OF[$p]) !== ''))]);
   elseif ($method === 'GET' && $path === '/') { header('Content-Type: text/html; charset=utf-8'); echo '<!doctype html><meta charset="utf-8"><title>Spektly sign-in</title><body style="margin:0;height:100vh;display:grid;place-items:center;background:#0b1624;color:#eef1f5;font:16px -apple-system,Segoe UI,sans-serif"><div style="text-align:center"><div style="font-weight:700;color:#7fa3cc">spektly</div><p>This address only handles sign-ins started from the Spektly app.</p></div>'; }
   else out(['error' => 'not found'], 404);

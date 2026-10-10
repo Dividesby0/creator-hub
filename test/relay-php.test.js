@@ -42,6 +42,9 @@ test('PHP relay: loopback-only redirect, server-side secret exchange, Engine con
     assert.strictEqual((await get(RELAY + '/v1/oauth/cb/threads?code=x&state=51234.abc')).headers.location, 'http://127.0.0.1:51234/callback/?state=51234.abc&code=x');
 
     const realFetch = global.fetch;
+    const del = await (await realFetch(RELAY + '/v1/meta/data-deletion', { method: 'POST', body: 'signed_request=x' })).json();
+    assert.match(del.confirmation_code, /^[0-9a-f]{16}$/); assert.match(del.url, /^https:\/\/spektly\.com\/privacy/);
+    assert.strictEqual((await realFetch(RELAY + '/v1/meta/deauthorize', { method: 'POST', body: 'signed_request=x' })).status, 200);
     for (const [pid, profile] of [['instagram', { user_id: '17', username: 'decrypt443' }], ['threads', { id: '18', username: 'decrypt443' }], ['facebook', { data: [{ id: 'P1', name: 'Decrypt443', access_token: 'PAGE' }] }]]) {
       builtinMod._reset({}, { relay: { url: RELAY }, [pid]: { appId: 'APP' } });
       global.fetch = async (url, init) => String(url).startsWith(RELAY) ? realFetch(url, init) : Response.json(profile);
