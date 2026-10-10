@@ -8,4 +8,18 @@ return [
   'THREADS_APP_SECRET' => '',
   'FACEBOOK_APP_ID' => '',
   'FACEBOOK_APP_SECRET' => '',
+  // Licensing. LICENSE_PUBLIC_KEY is public (same value as src/license/keys.json "licensePublicKey").
+  'LICENSE_PUBLIC_KEY' => '',
+  // Creem (payments). Paste your API key from the Creem dashboard (Developers, API keys).
+  'CREEM_API_KEY' => '',
+  'CREEM_TEST_MODE' => '0',            // '1' while testing with Creem test mode
+  // Creem product id => Spektly plan
+  'CREEM_PRODUCTS' => [
+    // 'prod_xxxxxxxx' => 'solo',
+  ],
+  // Checkout link for each plan (spektly.com/#plans buttons go to https://<this host>/buy/<plan>)
+  'BUY_URLS' => [
+    'solo' => '', 'creator' => '', 'pro' => '', 'studio' => '', 'agency' => '',
+  ],
+  'ADMIN_TOKEN' => '',                 // optional, long random string for /v1/admin/*
 ];

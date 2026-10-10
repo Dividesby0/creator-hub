@@ -7,6 +7,8 @@
 // Secrets live OUTSIDE the public folder in spektly-signin-secrets.php (see secrets.example.php).
 // Redirect URI to register in each platform app: https://<this host>/v1/oauth/cb/<platform>
 declare(strict_types=1);
+const SPEKTLY_RELAY = true;
+require __DIR__ . '/license.php';
 
 const PROVIDERS = ['tiktok', 'instagram', 'threads', 'facebook'];
 const SECRET_OF = ['tiktok' => 'TIKTOK_CLIENT_SECRET', 'instagram' => 'INSTAGRAM_APP_SECRET', 'threads' => 'THREADS_APP_SECRET', 'facebook' => 'FACEBOOK_APP_SECRET'];
@@ -16,7 +18,11 @@ function cfg(): array {
   if ($c !== null) return $c;
   $c = [];
   $file = getenv('SPEKTLY_SECRETS_FILE') ?: dirname(__DIR__) . '/spektly-signin-secrets.php';
-  if (is_file($file)) { $v = include $file; if (is_array($v)) $c = $v; }
+  // Non-secret licensing settings (public key, product ids, checkout links) live in their own file so
+  // they can be updated without touching the secrets. Values in the secrets file win.
+  $pub = getenv('SPEKTLY_LICENSE_CONFIG') ?: dirname(__DIR__) . '/spektly-license-config.php';
+  if (is_file($pub)) { $v = include $pub; if (is_array($v)) $c = $v; }
+  if (is_file($file)) { $v = include $file; if (is_array($v)) $c = array_merge($c, array_filter($v, fn($x) => $x !== '' && $x !== [])); }
   return $c;
 }
 function sec(string $k): string { return trim((string)(cfg()[$k] ?? '')); }
@@ -94,13 +100,14 @@ function token(string $provider): void {
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 try {
-  if ($method === 'GET' && str_starts_with($path, '/v1/oauth/cb/')) callback(basename($path));
+  if (licenseRoute($method, $path)) {}
+  elseif ($method === 'GET' && str_starts_with($path, '/v1/oauth/cb/')) callback(basename($path));
   elseif ($method === 'POST' && str_starts_with($path, '/v1/oauth/token/')) token(basename($path));
   // Meta app callbacks. The relay stores no user data, so there is nothing to remove; Spektly keeps
   // tokens only on the user's own computer (Disconnect in the app deletes them).
   elseif ($method === 'POST' && $path === '/v1/meta/deauthorize') out(['ok' => true]);
   elseif ($method === 'POST' && $path === '/v1/meta/data-deletion') { $code = bin2hex(random_bytes(8)); out(['url' => 'https://spektly.com/privacy/#data-deletion', 'confirmation_code' => $code]); }
-  elseif ($path === '/health') out(['ok' => true, 'platforms' => array_values(array_filter(PROVIDERS, fn($p) => sec(SECRET_OF[$p]) !== ''))]);
+  elseif ($path === '/health') out(['ok' => true, 'platforms' => array_values(array_filter(PROVIDERS, fn($p) => sec(SECRET_OF[$p]) !== '')), 'licensing' => ['keys' => sec('LICENSE_PUBLIC_KEY') !== '', 'plans' => sec('CREEM_API_KEY') !== '', 'checkout' => array_keys(array_filter((array)(cfg()['BUY_URLS'] ?? []), fn($u) => is_string($u) && str_starts_with($u, 'https://')))]]);
   elseif ($method === 'GET' && $path === '/') { header('Content-Type: text/html; charset=utf-8'); echo '<!doctype html><meta charset="utf-8"><title>Spektly sign-in</title><body style="margin:0;height:100vh;display:grid;place-items:center;background:#0b1624;color:#eef1f5;font:16px -apple-system,Segoe UI,sans-serif"><div style="text-align:center"><div style="font-weight:700;color:#7fa3cc">spektly</div><p>This address only handles sign-ins started from the Spektly app.</p></div>'; }
   else out(['error' => 'not found'], 404);
 } catch (Throwable $e) { out(['error' => 'server_error'], 500); }
