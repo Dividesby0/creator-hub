@@ -1,7 +1,7 @@
 'use strict';
 // Live check of the in-app TikTok sign-in window (real tiktok.com, no credentials entered):
 //   xvfb-run -a npx electron test/smoke-signin.js <outDir>
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, BaseWindow } = require('electron');
 const path = require('path'), fs = require('fs'), os = require('os');
 const outDir = process.argv[process.argv.length - 1];
 const userData = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-signin-'));
@@ -22,7 +22,8 @@ app.whenReady().then(async () => {
   for (let i = 0; i < 60 && !(await js(`document.querySelector('#splash')?.classList.contains('gone') || false`)); i++) await wait(200);
   await js(`document.querySelector('#nav button[data-view="accounts"]').click()`); await wait(500);
   const clicked = await js(`(() => { const b = [...document.querySelectorAll('button')].find(b => /Connect TikTok/.test(b.textContent)); if (b) b.click(); return !!b; })()`);
-  let signIn; for (let i = 0; i < 40 && !(signIn = BrowserWindow.getAllWindows().find(w => w !== win)); i++) await wait(250);
+  let signInWin; for (let i = 0; i < 40 && !(signInWin = BaseWindow.getAllWindows().find(w => w.__view)); i++) await wait(250);
+  const signIn = signInWin && { webContents: signInWin.__view.webContents, getTitle: () => signInWin.getTitle(), getParentWindow: () => signInWin.getParentWindow(), isDestroyed: () => signInWin.isDestroyed(), close: () => signInWin.close() };
   const r = { clicked, windowOpened: !!signIn };
   if (signIn) {
     await wait(9000);
@@ -30,7 +31,17 @@ app.whenReady().then(async () => {
     r.clientKey = new URL(r.url).searchParams.get('client_key');
     r.text = (await signIn.webContents.executeJavaScript('document.body.innerText').catch(e => String(e))).slice(0, 600);
     fs.writeFileSync(path.join(outDir, 'signin.png'), (await signIn.webContents.capturePage()).toPNG());
-    r.parent = signIn.getParentWindow() === win;
+    r.barText = await signInWin.contentView.children[0].webContents.executeJavaScript('document.body.innerText').catch(() => 'js-off');
+    r.parent = !!signIn.getParentWindow();
+    fs.writeFileSync(path.join(outDir, 'bar.png'), (await signInWin.contentView.children[0].webContents.capturePage()).toPNG());
+    if (process.env.TRY_BROWSER) {
+      const { shell } = require('electron'); shell.openExternal = async u => { r.handedTo = u; };
+      await signInWin.contentView.children[0].webContents.executeJavaScript('document.querySelector("a").click()');
+      await wait(1500);
+      r.closedAfterHandoff = signInWin.isDestroyed();
+      r.issueAfterHandoff = await js(`(document.querySelector('.chan .issue span')||{}).textContent || ''`);
+      fs.writeFileSync(path.join(outDir, 'result.json'), JSON.stringify(r, null, 2)); app.exit(0); return;
+    }
     // Simulate TikTok sending the browser back to Spektly (wrong state, so nothing is stored):
     let dec = r.url; for (let i = 0; i < 5; i++) dec = decodeURIComponent(dec);
     const redirect = dec.match(/redirect_uri=(http:\/\/127\.0\.0\.1:\d+\/callback\/)/)[1];

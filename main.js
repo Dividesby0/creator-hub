@@ -1,5 +1,5 @@
 'use strict';
-const { app, BrowserWindow, ipcMain, dialog, shell, safeStorage, Tray, Menu, nativeImage, Notification, powerSaveBlocker } = require('electron');
+const { app, BrowserWindow, BaseWindow, WebContentsView, ipcMain, dialog, shell, safeStorage, Tray, Menu, nativeImage, Notification, powerSaveBlocker } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -84,18 +84,50 @@ function openExternal(url) {
 // Its own persistent session keeps the platform login separate from the app and remembers it for reconnects.
 let signInWin = null;
 const signInUA = () => `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${process.versions.chrome} Safari/537.36`;
+const SIGNIN_BAR = 46;
+const HINTS = {
+  'Sign in to Threads': 'Threads uses your Instagram login.',
+  'Sign in to Instagram': 'Use your Instagram login, or Log in with Facebook.',
+  'Sign in to Facebook': 'Use the Facebook account that manages your Page.'
+};
+// Small branded bar above the platform's page: who you are signing in to, plus a way out to the
+// browser where people are usually already signed in (passkeys, Facebook/Google/Apple logins, saved passwords).
+function signInBarHtml(title) {
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  return `<!doctype html><meta charset="utf-8"><style>
+    html,body{margin:0;height:100%;background:#0b1624;color:#eef1f5;font:13px -apple-system,Segoe UI,sans-serif;-webkit-user-select:none;overflow:hidden}
+    .bar{display:flex;align-items:center;gap:10px;height:100%;padding:0 12px}
+    .t{font-weight:600;white-space:nowrap}.h{color:#93a6bd;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    a{color:#0b1624;background:#7fa3cc;border-radius:6px;padding:6px 10px;text-decoration:none;font-weight:600;white-space:nowrap}
+    a:hover{background:#a9c3e0}</style>
+    <div class="bar"><span class="t">${esc(title)}</span><span class="h">${esc(HINTS[title] || '')}</span>
+    <a href="spektly://use-browser" title="Finish signing in with your usual browser, where you may already be logged in">Use my browser instead</a></div>`;
+}
 function openSignInWindow(url, { title = 'Sign in' } = {}) {
   if (!/^https:\/\//i.test(url)) return;
   if (signInWin && !signInWin.isDestroyed()) { signInWin.__replaced = true; signInWin.close(); }
-  const w = signInWin = new BrowserWindow({
-    parent: win && !win.isDestroyed() ? win : undefined, width: 520, height: 780, minWidth: 420, minHeight: 560,
-    title: `${title} · Spektly`, icon: iconPath(), backgroundColor: '#ffffff', autoHideMenuBar: true, show: false,
-    webPreferences: { partition: 'persist:spektly-signin', contextIsolation: true, nodeIntegration: false, sandbox: true }
+  const w = signInWin = new BaseWindow({
+    parent: win && !win.isDestroyed() ? win : undefined, width: 520, height: 820, minWidth: 440, minHeight: 600,
+    title: `${title} · Spektly`, icon: iconPath(), backgroundColor: '#ffffff', autoHideMenuBar: true, show: false
   });
   w.removeMenu?.();
-  w.webContents.setUserAgent(signInUA());
-  // Pop-ups inside the sign-in page (e.g. "continue with Google/Apple" on TikTok) stay in the app, same session.
-  w.webContents.setWindowOpenHandler(({ url: u }) => /^https:\/\//i.test(u)
+  const bar = new WebContentsView({ webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true } });
+  const view = new WebContentsView({ webPreferences: { partition: 'persist:spektly-signin', contextIsolation: true, nodeIntegration: false, sandbox: true } });
+  w.contentView.addChildView(bar); w.contentView.addChildView(view);
+  const layout = () => { const [cw, ch] = w.getContentSize(); bar.setBounds({ x: 0, y: 0, width: cw, height: SIGNIN_BAR }); view.setBounds({ x: 0, y: SIGNIN_BAR, width: cw, height: Math.max(0, ch - SIGNIN_BAR) }); };
+  layout(); w.on('resize', layout);
+  const wc = view.webContents;
+  wc.setUserAgent(signInUA());
+  w.__view = view; // tests
+  // "Use my browser instead": hand the same sign-in (same state, same local listener) to the default browser.
+  bar.webContents.on('will-navigate', (e, u) => {
+    e.preventDefault();
+    if (u === 'spektly://use-browser') { w.__handedOff = true; openExternal(url); w.close(); }
+  });
+  bar.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  bar.webContents.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(signInBarHtml(title)));
+  // Pop-ups inside the sign-in page (e.g. "continue with Google/Apple/Facebook") stay in the app, same session.
+  wc.setWindowOpenHandler(({ url: u }) => /^https:\/\//i.test(u)
     ? { action: 'allow', overrideBrowserWindowOptions: { parent: w, width: 500, height: 700, autoHideMenuBar: true, webPreferences: { partition: 'persist:spektly-signin', sandbox: true } } }
     : { action: 'deny' });
   let finished = false;
@@ -105,17 +137,19 @@ function openSignInWindow(url, { title = 'Sign in' } = {}) {
       setTimeout(() => { if (!w.isDestroyed()) w.close(); }, 1600);
     }
   };
-  w.webContents.on('did-navigate', onNav);
-  w.webContents.on('did-redirect-navigation', (e) => onNav(e, e.url));
-  w.on('page-title-updated', e => { e.preventDefault(); });
+  wc.on('did-navigate', onNav);
+  wc.on('did-redirect-navigation', (e) => onNav(e, e.url));
   w.on('closed', () => {
     if (signInWin === w) signInWin = null;
-    if (!finished && !w.__replaced) cancelPendingSignIn('The sign-in window was closed before you finished. Click Connect to try again.');
-    if (win && !win.isDestroyed()) win.focus();
+    if (!finished && !w.__replaced && !w.__handedOff) cancelPendingSignIn('The sign-in window was closed before you finished. Click Connect to try again.');
+    try { view.webContents.close(); bar.webContents.close(); } catch (_) {}
+    if (win && !win.isDestroyed() && !w.__handedOff) win.focus();
   });
-  w.once('ready-to-show', () => { if (!w.isDestroyed()) { w.show(); w.focus(); } });
-  setTimeout(() => { if (!w.isDestroyed() && !w.isVisible()) { w.show(); w.focus(); } }, 1500);
-  w.loadURL(url);
+  let shown = false;
+  const show = () => { if (!shown && !w.isDestroyed()) { shown = true; w.show(); w.focus(); } };
+  wc.once('did-finish-load', show);
+  setTimeout(show, 1500);
+  wc.loadURL(url);
 }
 
 function notify(evt, data) {
@@ -281,7 +315,7 @@ function registerIpc() {
   handle('insights:exportPdf', async (html, suggested) => {
     const r = await dialog.showSaveDialog(win, { defaultPath: path.join(app.getPath('documents'), suggested || 'Spektly report.pdf'), filters: [{ name: 'PDF', extensions: ['pdf'] }] });
     if (r.canceled) return null;
-    const off = new BrowserWindow({ show: false, width: 1100, height: 1400, webPreferences: { sandbox: true, javascript: false } });
+    const off = new BrowserWindow({ show: false, width: 1100, height: 1400, webPreferences: { sandbox: true } });
     try {
       await off.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
       const pdf = await off.webContents.printToPDF({ printBackground: true, pageSize: 'Letter', margins: { marginType: 'default' } });
