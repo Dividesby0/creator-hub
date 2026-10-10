@@ -7,12 +7,14 @@
 // private half never leaves the data folder (outside public_html). The app ships the public half.
 declare(strict_types=1);
 if (!defined('SPEKTLY_RELAY')) { http_response_code(404); exit; }
-// Hosts without the sodium extension: pure-PHP Ed25519 from paragonie/sodium_compat (ISC licence),
-// uploaded next to the secrets as spektly-lib/sodium_compat (src/, lib/ and autoload.php).
-if (!function_exists('sodium_crypto_sign_keypair')) {
-  $sc = dirname(__DIR__) . '/spektly-lib/sodium_compat/autoload.php';
-  if (is_file($sc)) require_once $sc;
-}
+// Ed25519: the sodium extension when the host has it, otherwise the bundled pure-PHP copy of
+// paragonie/sodium_compat (ed25519-compat.php). Both produce identical keys and signatures.
+function ed(): bool { static $native = null; if ($native === null) { $native = function_exists('sodium_crypto_sign_detached'); if (!$native) require_once __DIR__ . '/ed25519-compat.php'; } return $native; }
+function ed_keypair(): string { return ed() ? sodium_crypto_sign_keypair() : ParagonIE_Sodium_Core_Ed25519::keypair(); }
+function ed_public(string $kp): string { return ed() ? sodium_crypto_sign_publickey($kp) : ParagonIE_Sodium_Core_Ed25519::publickey($kp); }
+function ed_secret(string $kp): string { return ed() ? sodium_crypto_sign_secretkey($kp) : ParagonIE_Sodium_Core_Ed25519::secretkey($kp); }
+function ed_sign(string $msg, string $sk): string { return ed() ? sodium_crypto_sign_detached($msg, $sk) : ParagonIE_Sodium_Core_Ed25519::sign_detached($msg, $sk); }
+function ed_verify(string $sig, string $msg, string $pk): bool { try { return ed() ? sodium_crypto_sign_verify_detached($sig, $msg, $pk) : ParagonIE_Sodium_Core_Ed25519::verify_detached($sig, $msg, $pk); } catch (Throwable $e) { return false; } }
 
 const LIC_DOMAIN = "CREATORHUB-LICENSE-V1\0";
 const ACT_DOMAIN = "CREATORHUB-ACTIVATION-V1\0";
@@ -48,7 +50,7 @@ function actKeypair(): string {
   $f = dataDir() . '/activation-key.bin';
   if (!is_file($f)) {
     $tmp = $f . '.' . bin2hex(random_bytes(4));
-    file_put_contents($tmp, sodium_crypto_sign_keypair());
+    file_put_contents($tmp, ed_keypair());
     chmod($tmp, 0600);
     // Hard links are not allowed on some shared hosts; fall back to an exclusive create.
     if (!@link($tmp, $f) && !is_file($f)) {
@@ -56,15 +58,15 @@ function actKeypair(): string {
       if ($h) { fwrite($h, (string)file_get_contents($tmp)); fclose($h); chmod($f, 0600); }
     }
     @unlink($tmp);
-    if (!is_file($f) || filesize($f) !== SODIUM_CRYPTO_SIGN_KEYPAIRBYTES) throw new RuntimeException('Could not create the activation key.');
+    if (!is_file($f) || filesize($f) !== 96) throw new RuntimeException('Could not create the activation key.');
   }
   return (string)file_get_contents($f);
 }
-function actPublicB64(): string { return base64_encode(sodium_crypto_sign_publickey(actKeypair())); }
+function actPublicB64(): string { return base64_encode(ed_public(actKeypair())); }
 function b64u(string $s): string { return rtrim(strtr(base64_encode($s), '+/', '-_'), '='); }
 function signActivation(array $claims): string {
   $body = json_encode($claims, JSON_UNESCAPED_SLASHES);
-  return b64u($body) . '.' . b64u(sodium_crypto_sign_detached(ACT_DOMAIN . $body, sodium_crypto_sign_secretkey(actKeypair())));
+  return b64u($body) . '.' . b64u(ed_sign(ACT_DOMAIN . $body, ed_secret(actKeypair())));
 }
 
 // ---- CH1 keys ----
@@ -86,7 +88,7 @@ function parseCh1(string $key): array {
   $payload = substr($buf, 0, 16); $sig = substr($buf, 16, 64);
   $pub = base64_decode(sec('LICENSE_PUBLIC_KEY'));
   if (strlen($pub) !== 32) throw new RuntimeException('Licensing is not configured on the server.');
-  if (!sodium_crypto_sign_verify_detached($sig, LIC_DOMAIN . $payload, $pub)) throw new RuntimeException('License key signature is invalid.');
+  if (!ed_verify($sig, LIC_DOMAIN . $payload, $pub)) throw new RuntimeException('License key signature is invalid.');
   $tier = TIER_CODES[ord($payload[1])] ?? null;
   if (!$tier) throw new RuntimeException('Unknown license tier.');
   $exp = unpack('n', substr($payload, 12, 2))[1];

@@ -26,7 +26,8 @@ test('core: plan activation stops working at its until date', () => {
   assert.throws(() => core.verifyActivation(tok, { ...opts, activationPublicKeys: [other] }), /signature/);
 });
 
-test('licensing server: buy links, plan keys via Creem, CH1 seats, cancellation locks the app', { skip: !hasPhp && 'php not installed' }, async () => {
+for (const crypto_ of ['sodium', 'compat'])
+test(`licensing server (${crypto_}): buy links, plan keys via Creem, CH1 seats, cancellation locks the app`, { skip: !hasPhp && 'php not installed' }, async () => {
   // fake Creem
   const lic = { key: 'PLAN-KEY-CREATOR-0001', product_id: 'prod_creator', status: 'active', activation_limit: 2, expires_at: null, instances: [] };
   const creemSeen = [];
@@ -58,12 +59,13 @@ test('licensing server: buy links, plan keys via Creem, CH1 seats, cancellation 
     'CREEM_PRODUCTS' => ['prod_creator' => 'creator'], 'BUY_URLS' => ['solo' => 'https://www.creem.io/test/payment/prod_solo'], 'UPSTREAM' => ['api.creem.io' => 'http://127.0.0.1:${cport}']];`);
   const portSrv = http.createServer(); const pport = await listen(portSrv); portSrv.close();
   const docroot = path.join(__dirname, '..', 'vendor', 'signin-relay-php', 'public');
-  const php = spawn('php', ['-S', `127.0.0.1:${pport}`, '-t', docroot, path.join(docroot, 'index.php')], { env: { ...process.env, SPEKTLY_SECRETS_FILE: secrets }, stdio: 'ignore' });
+  const noSodium = crypto_ === 'compat' ? ['-d', 'disable_functions=sodium_crypto_sign_detached,sodium_crypto_sign_keypair,sodium_crypto_sign_publickey,sodium_crypto_sign_secretkey,sodium_crypto_sign_verify_detached'] : [];
+  const php = spawn('php', [...noSodium, '-S', `127.0.0.1:${pport}`, '-t', docroot, path.join(docroot, 'index.php')], { env: { ...process.env, SPEKTLY_SECRETS_FILE: secrets }, stdio: 'ignore' });
   const S = `http://127.0.0.1:${pport}`;
   try {
     for (let i = 0; i < 50; i++) { try { await get(S + '/health'); break; } catch (_) { await new Promise(r => setTimeout(r, 100)); } }
     const health = JSON.parse((await get(S + '/health')).body);
-    assert.deepStrictEqual({ ...health.licensing, php: undefined }, { sodium: true, sqlite: true, php: undefined, keys: true, plans: true, checkout: ['solo'] });
+    assert.deepStrictEqual({ ...health.licensing, php: undefined }, { crypto: crypto_, sqlite: true, php: undefined, keys: true, plans: true, checkout: ['solo'] });
     assert.strictEqual((await get(S + '/license.php')).status, 404);
     // buy links
     const b1 = await get(S + '/buy/solo'); assert.strictEqual(b1.status, 302); assert.strictEqual(b1.headers.location, 'https://www.creem.io/test/payment/prod_solo');
