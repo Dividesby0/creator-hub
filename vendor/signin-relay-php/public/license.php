@@ -44,8 +44,13 @@ function actKeypair(): string {
     $tmp = $f . '.' . bin2hex(random_bytes(4));
     file_put_contents($tmp, sodium_crypto_sign_keypair());
     chmod($tmp, 0600);
-    if (!@link($tmp, $f)) { /* another request won the race */ }
+    // Hard links are not allowed on some shared hosts; fall back to an exclusive create.
+    if (!@link($tmp, $f) && !is_file($f)) {
+      $h = @fopen($f, 'x');
+      if ($h) { fwrite($h, (string)file_get_contents($tmp)); fclose($h); chmod($f, 0600); }
+    }
     @unlink($tmp);
+    if (!is_file($f) || filesize($f) !== SODIUM_CRYPTO_SIGN_KEYPAIRBYTES) throw new RuntimeException('Could not create the activation key.');
   }
   return (string)file_get_contents($f);
 }
