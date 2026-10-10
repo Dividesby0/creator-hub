@@ -134,6 +134,12 @@ test(`licensing server (${crypto_}): buy links, plan keys via Creem, CH1 seats, 
     await assert.rejects(y.activateOnline(ch1, { eulaAccepted: true }), /already active on 1 computer/);
     await x.deactivate();
     assert.strictEqual((await y.activateOnline(ch1, { eulaAccepted: true })).serial, 4242);
+    // a computer activated offline (not in the server's database) keeps working when it re-checks
+    const off = core.signLicense({ tier: 9, maxDevices: 1, serial: 5151 }, L.privateKey);
+    const v = await (await fetch(S + '/v1/validate', { method: 'POST', body: JSON.stringify({ key: off, device: dev(20) }) })).json();
+    assert.strictEqual(v.valid, true);
+    const v2 = await (await fetch(S + '/v1/validate', { method: 'POST', body: JSON.stringify({ key: ch1, device: dev(10) }) })).json();
+    assert.strictEqual(v2.valid, false); // seat was released by deactivate and taken by another computer
     const forged = ch1.slice(0, -3) + (ch1.endsWith('A') ? 'BBB' : 'AAA');
     await assert.rejects(mgr(12).activateOnline(forged, { eulaAccepted: true }), /signature|mistyped/);
   } finally { php.kill(); creem.close(); }

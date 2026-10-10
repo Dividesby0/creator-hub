@@ -202,8 +202,12 @@ function validateLic(): void {
     try { $lic = parseCh1($key); } catch (RuntimeException $e) { out(['valid' => false, 'error' => $e->getMessage()]); return; }
     $id = 'ch1:' . $lic['serial'];
     if (licStatus($id) === 'revoked') { out(['valid' => false, 'error' => 'revoked']); return; }
+    // Only a revoked key or a seat released by the owner ends a CH1 activation. Computers activated
+    // offline by the vendor tools are not in this database and stay valid.
+    $s = $pdo->prepare('SELECT COUNT(*) FROM activations WHERE lic = ?'); $s->execute([$id]);
+    $any = (int)$s->fetchColumn();
     $s = $pdo->prepare('SELECT 1 FROM activations WHERE lic = ? AND device = ?'); $s->execute([$id, $device]);
-    out(['valid' => (bool)$s->fetchColumn()]); return;
+    out(['valid' => (bool)$s->fetchColumn() || $any === 0]); return;
   }
   $id = 'creem:' . keyHash($key);
   $s = $pdo->prepare('SELECT a.*, l.plan, l.max_devices, l.status FROM activations a JOIN licenses l ON l.lic = a.lic WHERE a.lic = ? AND a.device = ?'); $s->execute([$id, $device]);
