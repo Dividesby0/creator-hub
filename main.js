@@ -166,7 +166,7 @@ function createWindow() {
   win = new BrowserWindow({
     width: 1280, height: 820, minWidth: 980, minHeight: 640,
     title: 'Spektly', icon: iconPath(), show: false,
-    backgroundColor: '#0b1624',
+    backgroundColor: '#10164A',
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true }
   });
   win.removeMenu?.();
