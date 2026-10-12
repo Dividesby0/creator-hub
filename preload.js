@@ -35,6 +35,11 @@ contextBridge.exposeInMainWorld('hub', {
     disconnect: pid => call('accounts:disconnect', pid)
   },
   settings: { update: patch => call('settings:update', patch) },
+  update: {
+    download: () => call('update:download'),
+    install: () => call('update:install'),
+    reveal: () => call('update:reveal')
+  },
   analytics: { refresh: () => call('analytics:refresh') },
   onboarding: {
     finish: () => call('onboarding:finish'),

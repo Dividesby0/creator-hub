@@ -10,6 +10,7 @@ const { deviceFingerprint } = require('./src/license/core');
 const { InsightsService } = require('./src/insights/service');
 const cleanupMod = require('./src/installer/cleanup');
 const { checkForUpdate } = require('./src/installer/updates');
+const { downloadUpdate } = require('./src/installer/download');
 const os = require('os');
 const pkg = require('./package.json');
 const { cancelPendingSignIn } = require('./src/util');
@@ -36,6 +37,7 @@ const migratedFromLegacy = migrateLegacyData();
 if (!app.requestSingleInstanceLock()) { app.quit(); process.exit(0); }
 
 let win, tray, store, engine, license, insights, quitting = false, blockerId = null, updateInfo = null;
+let updateDownload = null;   // { state, done, total, file, error }
 
 // ---- at-rest encryption: OS keychain (macOS Keychain / Windows DPAPI) via safeStorage ----
 // macOS asks for the login password whenever an app's signature changes, and until Spektly is
@@ -235,6 +237,7 @@ function state() {
     version: pkg.version,
     brand: require('./src/brand.json'),
     update: updateInfo,
+    updateDownload,
     insights: insights.view(),
     posts: store.listPosts(),
     accounts: engine.accountsView(),
@@ -257,6 +260,39 @@ function registerIpc() {
 
   handle('app:state', state);
   handle('app:openUrl', url => openExternal(url));
+
+  // Updates are fetched by Spektly itself: the customer stays in the app, and the file carries
+  // no macOS quarantine flag, so it opens without the "Apple could not verify" prompt.
+  handle('update:download', async () => {
+    if (!updateInfo) throw new Error('No update is available.');
+    if (updateDownload?.state === 'downloading') return updateDownload;
+    const dir = path.join(app.getPath('userData'), 'updates');
+    const name = updateInfo.name || path.basename(new URL(updateInfo.url).pathname);
+    updateDownload = { state: 'downloading', done: 0, total: updateInfo.size || 0, version: updateInfo.version };
+    notify('changed');
+    try {
+      const r = await downloadUpdate({
+        url: updateInfo.url, dir, name, size: updateInfo.size, sha256: updateInfo.sha256,
+        onProgress: ({ done, total }) => { updateDownload = { ...updateDownload, done, total: total || updateDownload.total }; notify('changed'); }
+      });
+      updateDownload = { state: 'ready', done: r.bytes, total: r.bytes, file: r.file, verified: r.verified, version: updateInfo.version };
+      store.addLog('info', `Spektly ${updateInfo.version} downloaded${r.verified ? ' and verified' : ''}.`);
+    } catch (e) {
+      updateDownload = { state: 'failed', error: e.message, version: updateInfo.version };
+      store.addLog('warn', 'Update download failed: ' + e.message);
+    }
+    notify('changed');
+    return updateDownload;
+  });
+
+  handle('update:install', async () => {
+    if (updateDownload?.state !== 'ready') throw new Error('The update has not finished downloading.');
+    const err = await shell.openPath(updateDownload.file);
+    if (err) throw new Error(err);
+    return true;
+  });
+
+  handle('update:reveal', () => { if (updateDownload?.file) shell.showItemInFolder(updateDownload.file); return true; });
 
   handle('posts:create', input => {
     const post = store.createPost(input);
@@ -418,7 +454,9 @@ function migrateKeychainValues(box) {
 }
 
 async function runUpdateCheck() {
-  updateInfo = await checkForUpdate({ feedUrl: pkg.updateFeed, currentVersion: pkg.version });
+  const was = updateInfo?.version;
+  updateInfo = await checkForUpdate({ feedUrl: pkg.updateFeed, fallbackFeedUrl: pkg.updateFeedFallback, currentVersion: pkg.version });
+  if (updateInfo?.version !== was) updateDownload = null;
   notify('changed');
   return updateInfo;
 }

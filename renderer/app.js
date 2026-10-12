@@ -68,7 +68,31 @@ async function refresh() {
   const upcoming = S.posts.filter(p => p.status === 'approved').length;
   const connected = S.accounts.filter(a => a.connected).length;
   const ub = $('#updateBanner');
-  if (ub) { ub.hidden = !S.update; if (S.update) ub.innerHTML = `Spektly ${S.update.version} is available. <a data-url="${S.update.url}">Download it</a>. Installing it replaces this version automatically.`; }
+  if (ub) {
+    ub.hidden = !S.update;
+    if (S.update) {
+      const d = S.updateDownload;
+      const mb = n => (n / 1048576).toFixed(0);
+      if (d?.state === 'downloading') {
+        const pct = d.total ? Math.round(d.done / d.total * 100) : 0;
+        ub.innerHTML = `Downloading Spektly ${esc(d.version)}… ${pct}%` +
+          `<div class="dlbar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div>` +
+          `<span class="muted small">${mb(d.done)} of ${mb(d.total)} MB</span>`;
+      } else if (d?.state === 'ready') {
+        ub.innerHTML = `Spektly ${esc(d.version)} is ready to install.` +
+          ` <button class="btn sm primary" data-action="installUpdate">Install it</button>` +
+          ` <button class="btn sm" data-action="revealUpdate">Show the file</button>` +
+          `<div class="muted small">${d.verified ? 'Downloaded from spektly.com and checked.' : 'Downloaded from spektly.com.'} Installing replaces this version.</div>`;
+      } else if (d?.state === 'failed') {
+        ub.innerHTML = `Spektly ${esc(d.version)} could not be downloaded. ${esc(d.error)}` +
+          ` <button class="btn sm" data-action="downloadUpdate">Try again</button>`;
+      } else {
+        ub.innerHTML = `Spektly ${esc(S.update.version)} is available.` +
+          ` <button class="btn sm primary" data-action="downloadUpdate">Download it</button>` +
+          `<div class="muted small">Spektly downloads it for you. Installing replaces this version.</div>`;
+      }
+    }
+  }
   if (S.settings.theme && document.documentElement.dataset.theme !== S.settings.theme) Theme.apply(S.settings.theme);
   renderWizard();
   $('#navStatus').innerHTML = `<div class="navmarks" title="${connected} of 6 channels connected">${PLATFORM_ORDER.map(pid => `<span class="${S.accounts.find(a => a.id === pid)?.connected ? 'on' : ''}">${pmark(pid, 'xs')}</span>`).join('')}</div>
@@ -647,6 +671,9 @@ document.addEventListener('click', async e => {
     case 'runSetup': await hub.onboarding.restart(); await refresh(); wizStep = 0; openWizard(); break;
     case 'assist': Assist.open(pid); break;
     case 'disconnect': if (await Modal.confirm('Scheduled posts to this account will fail until you connect it again.', { title: `Disconnect ${esc(pname(pid))}?`, ok: 'Disconnect', danger: true })) { await run(() => hub.accounts.disconnect(pid)); await refresh(); } break;
+    case 'downloadUpdate': hub.update.download(); await refresh(); break;
+    case 'installUpdate': await run(() => hub.update.install()); break;
+    case 'revealUpdate': await run(() => hub.update.reveal()); break;
     case 'deactivate': if (await Modal.confirm('You will need your license key to activate Spektly on this computer again.', { title: 'Deactivate this computer?', ok: 'Deactivate', danger: true })) await run(() => hub.license.deactivate()); break;
   }
 });

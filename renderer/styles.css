@@ -402,3 +402,7 @@ body.fx-on .modal-scrim { background: color-mix(in srgb, var(--bg) 18%, transpar
 .pp-bar.over ~ .pp-txt .pp-meta, .pp:has(.pp-bar.over) .pp-meta { color: var(--bad); font-weight: 600; }
 .navmarks { display: flex; gap: 6px; margin-bottom: 8px; }
 .navmarks span:not(.on) .pmark { filter: grayscale(1); opacity: .35; }
+
+/* update progress */
+.dlbar { height: 6px; border-radius: 3px; background: var(--panel2); overflow: hidden; margin: 7px 0 4px; max-width: 320px; }
+.dlbar i { display: block; height: 100%; border-radius: 3px; background: var(--accent); transition: width .25s; }

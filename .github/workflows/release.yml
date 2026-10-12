@@ -73,9 +73,23 @@ jobs:
         run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
       - uses: actions/download-artifact@v4
         with: { path: out, merge-multiple: true }
+      - name: Build the update feed and checksums
+        run: |
+          node tools/make-update-feed.js out docs --base "https://github.com/Dividesby0/creator-hub/releases/latest/download/"
+          cat docs/updates/SHA256SUMS.txt
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.v.outputs.version }}
           name: Spektly ${{ steps.v.outputs.version }}
-          files: out/*
+          files: |
+            out/*
+            docs/updates/SHA256SUMS.txt
           make_latest: true
+      # Publish the feed on spektly.com so the app checks our own site, with checksums, first.
+      - name: Publish the update feed to the site
+        run: |
+          git config user.name "spektly-ci"
+          git config user.email "noreply@spektly.com"
+          git add docs/updates/latest.json docs/updates/SHA256SUMS.txt
+          git diff --cached --quiet || git commit -m "Update feed for ${{ steps.v.outputs.version }} [skip ci]"
+          git push origin HEAD:main
