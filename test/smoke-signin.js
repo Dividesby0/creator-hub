@@ -27,7 +27,12 @@ app.whenReady().then(async () => {
   const r = { clicked, windowOpened: !!signIn };
   if (signIn) {
     await wait(9000);
-    r.title = signIn.getTitle(); r.url = signIn.webContents.getURL();
+    r.title = signIn.getTitle();
+    // The platform redirects to its own login page, which drops the query, so read the first
+    // entry in the window's history: the authorize URL Spektly actually asked for.
+    const h = signIn.webContents.navigationHistory;
+    r.url = (h && h.getEntryAtIndex && h.length ? h.getEntryAtIndex(0).url : '') || signIn.webContents.getURL();
+    r.finalUrl = signIn.webContents.getURL();
     r.clientKey = new URL(r.url).searchParams.get('client_key');
     r.text = (await signIn.webContents.executeJavaScript('document.body.innerText').catch(e => String(e))).slice(0, 600);
     fs.writeFileSync(path.join(outDir, 'signin.png'), (await signIn.webContents.capturePage()).toPNG());
@@ -44,7 +49,12 @@ app.whenReady().then(async () => {
     }
     // Simulate TikTok sending the browser back to Spektly (wrong state, so nothing is stored):
     let dec = r.url; for (let i = 0; i < 5; i++) dec = decodeURIComponent(dec);
-    const redirect = dec.match(/redirect_uri=(http:\/\/127\.0\.0\.1:\d+\/callback\/)/)[1];
+    // One-click sign-in sends the platform to the relay, which bounces back to this computer
+    // using the loopback port carried in `state` ("<port>.<nonce>"). Older builds put the
+    // loopback address straight in redirect_uri, so accept either.
+    const rm = dec.match(/state=(\d{4,5})\./) || dec.match(/127\.0\.0\.1(?::|%3A)(\d+)/i);
+    if (!rm) { r.redirectMissing = dec.slice(0, 400); fs.writeFileSync(path.join(outDir, 'result.json'), JSON.stringify(r, null, 2)); app.exit(1); return; }
+    const redirect = `http://127.0.0.1:${rm[1]}/callback/`;
     await signIn.webContents.loadURL(redirect + '?code=x&state=wrong');
     r.callbackPage = await signIn.webContents.executeJavaScript('document.body.innerText');
     await wait(2500);

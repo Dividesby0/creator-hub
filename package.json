@@ -1,7 +1,7 @@
 {
   "name": "spektly",
   "productName": "Spektly",
-  "version": "2.5.1",
+  "version": "2.5.2",
   "description": "Local-first scheduler, approval queue, publisher and analytics for YouTube, TikTok, Instagram, Threads, Facebook and X.",
   "main": "main.js",
   "license": "UNLICENSED",
@@ -61,7 +61,12 @@
       "createStartMenuShortcut": true,
       "shortcutName": "Spektly",
       "uninstallDisplayName": "Spektly",
-      "artifactName": "Spektly-Setup.${ext}"
+      "artifactName": "Spektly-Setup.${ext}",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico",
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/uninstallerSidebar.bmp"
     },
     "electronFuses": {
       "runAsNode": false,
@@ -72,7 +77,30 @@
       "onlyLoadAppFromAsar": true
     },
     "asar": true,
-    "publish": null
+    "publish": null,
+    "dmg": {
+      "background": "build/background.png",
+      "window": {
+        "width": 540,
+        "height": 380
+      },
+      "contents": [
+        {
+          "x": 150,
+          "y": 228,
+          "type": "file"
+        },
+        {
+          "x": 390,
+          "y": 228,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "iconSize": 96,
+      "iconTextSize": 13,
+      "title": "Spektly ${version}"
+    }
   },
   "updateFeed": "https://api.github.com/repos/Dividesby0/creator-hub/releases/latest"
 }

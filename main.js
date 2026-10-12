@@ -95,12 +95,12 @@ const HINTS = {
 function signInBarHtml(title) {
   const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   return `<!doctype html><meta charset="utf-8"><style>
-    html,body{margin:0;height:100%;background:#0b1624;color:#eef1f5;font:13px -apple-system,Segoe UI,sans-serif;-webkit-user-select:none;overflow:hidden}
+    html,body{margin:0;height:100%;background:#10164A;color:#EEF2FF;font:13px -apple-system,Segoe UI,sans-serif;-webkit-user-select:none;overflow:hidden}
     .bar{display:flex;align-items:center;gap:10px;height:100%;padding:0 12px}
-    .t{font-weight:600;white-space:nowrap}.h{color:#93a6bd;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    a{color:#0b1624;background:#7fa3cc;border-radius:6px;padding:6px 10px;text-decoration:none;font-weight:600;white-space:nowrap}
-    a:hover{background:#a9c3e0}</style>
-    <div class="bar"><span class="t">${esc(title)}</span><span class="h">${esc(HINTS[title] || '')}</span>
+    .m{display:block;flex:none}.t{font-weight:600;white-space:nowrap}.h{color:#A3ABD9;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    a{color:#10164A;background:#9DF0FF;border-radius:6px;padding:6px 10px;text-decoration:none;font-weight:600;white-space:nowrap}
+    a:hover{background:#C2F6FF}</style>
+    <div class="bar"><svg width="22" height="22" viewBox="0 0 48 48" class="m" aria-hidden="true"><rect x="8" y="6" width="32" height="10" rx="5" fill="#B6C7F5"/><rect x="3" y="19" width="32" height="10" rx="5" fill="#7C67D2"/><rect x="12" y="32" width="32" height="10" rx="5" fill="#3C4691"/></svg><span class="t">${esc(title)}</span><span class="h">${esc(HINTS[title] || '')}</span>
     <a href="spektly://use-browser" title="Finish signing in with your usual browser, where you may already be logged in">Use my browser instead</a></div>`;
 }
 function openSignInWindow(url, { title = 'Sign in' } = {}) {
