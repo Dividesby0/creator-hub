@@ -68,7 +68,7 @@ const FX = (() => {
 
   // Brand mark: the Spektly three-bar emblem (from the official logo kit).
   function mark(cls = 'mark') {
-    return `<img class="${cls}" src="brand/emblem.png" alt="" aria-hidden="true" draggable="false">`;
+    return `<img class="${cls}" src="brand/emblem.svg" alt="" aria-hidden="true" draggable="false">`;
   }
   return { start, stop, mark };
 })();

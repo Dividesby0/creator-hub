@@ -19,7 +19,8 @@ img, svg { display: block; }
 /* header: the wordmark, the clock of the section you're reading, and the two things people come for */
 .top { position: sticky; top: 0; z-index: 20; background: rgba(16,22,74,.82); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); color: var(--day); border-bottom: 1px solid rgba(255,255,255,.08); }
 .top .wrap { display: flex; align-items: center; gap: 22px; height: 64px; }
-.word { font-family: Michroma, sans-serif; font-size: 19px; text-decoration: none; letter-spacing: -.01em; }
+.word { font-family: Michroma, sans-serif; font-size: 19px; text-decoration: none; letter-spacing: -.01em; display: inline-flex; align-items: center; gap: 11px; }
+.word .logo { display: block; width: 30px; height: 30px; flex-shrink: 0; }
 .clock { font-family: Michroma, sans-serif; font-size: 13px; color: var(--now); font-variant-numeric: tabular-nums; min-width: 52px; }
 .top nav { margin-left: auto; display: flex; align-items: center; gap: 22px; font-size: 15px; }
 .top nav a { text-decoration: none; color: #c9d0f5; }
@@ -186,7 +187,7 @@ img, svg { display: block; }
 .foot .wrap { display: flex; gap: 26px; flex-wrap: wrap; align-items: center; }
 .foot a { color: #dfe4ff; text-decoration: none; }
 .foot a:hover { text-decoration: underline; }
-.foot .word { color: #fff; margin-right: auto; }
+.foot .word { color: #fff; margin-right: auto; font-size: 18px; }
 
 /* inner pages (privacy, terms, account) */
 .doc { background: var(--day); color: var(--ink); padding: 70px 0 100px; }

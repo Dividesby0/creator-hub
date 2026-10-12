@@ -10,7 +10,8 @@
   <style>
     body.act { display: block; overflow-y: auto; background: linear-gradient(180deg, #10164a 0%, #2b3a9e 46%, #6a4fd0 78%, #b9a3ff 100%); color: #eef2ff; }
     .act main { max-width: 1080px; margin: 0 auto; padding: 40px 40px 60px; display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 48px; align-items: start; overflow: visible; }
-    .act .word { font-family: var(--display); font-size: 22px; }
+    .act .word { font-family: var(--display); font-size: 22px; display: inline-flex; align-items: center; gap: 11px; }
+    .act .word img { display: block }
     .act h1 { font-size: 34px; line-height: 1.15; margin: 34px 0 14px; color: #eef2ff; }
     .act .lede { font-size: 17px; line-height: 1.55; color: #c9d0f5; max-width: 440px; margin: 0 0 26px; }
     .act .orbit { position: relative; width: 300px; height: 300px; margin: 48px 0 0 10px; }
@@ -38,7 +39,7 @@
 <body class="act">
   <main>
     <section>
-      <span class="word">spektly</span>
+      <span class="word"><img src="brand/emblem.svg" width="30" height="30" alt="" aria-hidden="true">spektly</span>
       <h1>Pick a plan, paste your key, and your week starts posting.</h1>
       <p class="lede">Spektly needs an active plan to run. After checkout you get a key by email. Paste it here and this computer is ready.</p>
       <a class="clay cyan" href="https://spektly.com/#plans" target="_blank" rel="noopener">See plans, from $29.99 a month</a>
