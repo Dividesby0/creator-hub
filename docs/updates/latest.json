@@ -1,26 +1,26 @@
 {
   "version": "2.5.3",
-  "published": "2026-10-12T16:50:42.409Z",
+  "published": "2026-10-13T05:43:24.462Z",
   "page": "https://spektly.com/#download",
   "notes": "",
   "files": {
     "darwin-arm64": {
       "name": "Spektly-mac-arm64.dmg",
       "url": "https://github.com/Dividesby0/creator-hub/releases/latest/download/Spektly-mac-arm64.dmg",
-      "size": 108447418,
-      "sha256": "f81c62b9588bae1743e2cdbc674f6e149160c3f0d4c01b55ec5265c08b687b9f"
+      "size": 108447458,
+      "sha256": "c52b76a163caa75a6017ce108c3e587095bf08e73ce779eee49b63811787b44b"
     },
     "darwin-x64": {
       "name": "Spektly-mac-x64.dmg",
       "url": "https://github.com/Dividesby0/creator-hub/releases/latest/download/Spektly-mac-x64.dmg",
-      "size": 116169379,
-      "sha256": "be40cfa048aaaccb56eb3ebfe949a612797efa15f7b06189cc556d23c146758a"
+      "size": 116169378,
+      "sha256": "39f5ee924917d904a701f291add71a64fc234de05f9f4fbf9a9b4731f004076d"
     },
     "win32-x64": {
       "name": "Spektly-Setup.exe",
       "url": "https://github.com/Dividesby0/creator-hub/releases/latest/download/Spektly-Setup.exe",
-      "size": 94103232,
-      "sha256": "4232caed869a009e40c49d88df79ece955e71f61581175f387820ac5093c734d"
+      "size": 94103187,
+      "sha256": "29d44c055f6fd1210a3a15a4e823777fc34a66f64a99ef5e18456ac2694f5957"
     }
   }
 }
