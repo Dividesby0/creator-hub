@@ -67,7 +67,7 @@ test(`licensing server (${crypto_}): buy links, plan keys via Creem, CH1 seats, 
   try {
     for (let i = 0; i < 50; i++) { try { await get(S + '/health'); break; } catch (_) { await new Promise(r => setTimeout(r, 100)); } }
     const health = JSON.parse((await get(S + '/health')).body);
-    assert.deepStrictEqual({ ...health.licensing, php: undefined }, { crypto: crypto_ === 'sodium' && !nativeSodium ? 'compat' : crypto_, sqlite: true, php: undefined, keys: true, plans: true, checkout: ['solo'] });
+    assert.deepStrictEqual({ ...health.licensing, php: undefined }, { crypto: crypto_ === 'sodium' && !nativeSodium ? 'compat' : crypto_, sqlite: true, php: undefined, keys: true, plans: true, stripe: { key: false, webhook: false, prices: [], automaticTax: false }, checkout: ['solo'] });
     assert.strictEqual((await get(S + '/license.php')).status, 404);
     // buy links
     const b1 = await get(S + '/buy/solo'); assert.strictEqual(b1.status, 302); assert.strictEqual(b1.headers.location, 'https://www.creem.io/test/payment/prod_solo');

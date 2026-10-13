@@ -2,11 +2,13 @@
 // Spektly licensing: plan checkout links, online activation, seat limits and subscription checks.
 // Included by index.php. Two kinds of keys are accepted:
 //   * CH1-… keys issued by the vendor CLI (perpetual or dated), verified with the license PUBLIC key.
-//   * Plan keys sold through Creem (monthly subscriptions), checked against Creem's license API.
+//   * SPK-… plan keys sold through Stripe Billing (stripe.php), kept current by Stripe webhooks.
+//   * Plan keys sold through Creem (legacy), checked against Creem's license API.
 // Activations are signed with an Ed25519 key this server generates for itself on first use; the
 // private half never leaves the data folder (outside public_html). The app ships the public half.
 declare(strict_types=1);
 if (!defined('SPEKTLY_RELAY')) { http_response_code(404); exit; }
+require_once __DIR__ . '/stripe.php';
 // Ed25519: the sodium extension when the host has it, otherwise the bundled pure-PHP copy of
 // paragonie/sodium_compat (ed25519-compat.php). Both produce identical keys and signatures.
 function ed(): bool { static $native = null; if ($native === null) { $native = function_exists('sodium_crypto_sign_detached'); if (!$native) require_once __DIR__ . '/ed25519-compat.php'; } return $native; }
@@ -146,6 +148,7 @@ function activate(): void {
     out(['activation' => signActivation(['v' => 1, 'serial' => $lic['serial'], 'tier' => $lic['tier'], 'device' => $device, 'activationId' => $act['activation_id'], 'activatedAt' => $act['activated_at']])]);
     return;
   }
+  if (isSpk($key)) { stripeActivate($key, $device, $name, $platform); return; }
   if (strlen($key) < 8 || strlen($key) > 200) { out(['error' => 'That does not look like a Spektly key. Copy it again from your purchase email.'], 400); return; }
   if (sec('CREEM_API_KEY') === '') { out(['error' => 'Plan activation is not open yet.'], 503); return; }
   $id = 'creem:' . keyHash($key);
@@ -209,6 +212,7 @@ function validateLic(): void {
     $s = $pdo->prepare('SELECT 1 FROM activations WHERE lic = ? AND device = ?'); $s->execute([$id, $device]);
     out(['valid' => (bool)$s->fetchColumn() || $any === 0]); return;
   }
+  if (isSpk($key)) { stripeValidate($key, $device); return; }
   $id = 'creem:' . keyHash($key);
   $s = $pdo->prepare('SELECT a.*, l.plan, l.max_devices, l.status FROM activations a JOIN licenses l ON l.lic = a.lic WHERE a.lic = ? AND a.device = ?'); $s->execute([$id, $device]);
   $row = $s->fetch(PDO::FETCH_ASSOC);
@@ -232,7 +236,7 @@ function deactivateLic(): void {
   if (isCh1($key)) {
     try { $lic = parseCh1($key); } catch (RuntimeException $e) { out(['error' => $e->getMessage()], 400); return; }
     $id = 'ch1:' . $lic['serial'];
-  } else $id = 'creem:' . keyHash($key);
+  } else $id = isSpk($key) ? spkLic($key) : 'creem:' . keyHash($key);
   $s = db()->prepare('SELECT instance_id FROM activations WHERE lic = ? AND device = ?'); $s->execute([$id, $device]);
   $inst = $s->fetchColumn();
   if ($inst && !isCh1($key)) creem('/v1/licenses/deactivate', ['key' => $key, 'instance_id' => $inst]);
@@ -287,13 +291,14 @@ function accountSignup(): void {
     ON CONFLICT(email) DO UPDATE SET name = COALESCE(NULLIF(excluded.name, \'\'), name), giveaways = excluded.giveaways, updates = excluded.updates, ref = COALESCE(NULLIF(excluded.ref, \'\'), ref), updated_at = excluded.updated_at')
     ->execute([$email, $name, $give, $news, $ref, $now, $now]);
   if ($key !== '' && strlen($key) <= 200) {
-    $lic = isCh1($key) ? (function () use ($key) { try { return 'ch1:' . parseCh1($key)['serial']; } catch (Throwable $e) { return null; } })() : 'creem:' . keyHash($key);
+    $lic = isCh1($key) ? (function () use ($key) { try { return 'ch1:' . parseCh1($key)['serial']; } catch (Throwable $e) { return null; } })() : (isSpk($key) ? spkLic($key) : 'creem:' . keyHash($key));
     if ($lic) $pdo->prepare('INSERT OR IGNORE INTO customer_keys (email, lic, added_at) VALUES (?, ?, ?)')->execute([$email, $lic, $now]);
   }
   header('Location: ' . $back . '?joined=1', true, 303);
 }
 
 function licenseRoute(string $method, string $path): bool {
+  if (stripeRoute($method, $path)) return true;
   if ($method === 'POST' && $path === '/v1/account/signup') { accountSignup(); return true; }
   if ($method === 'POST' && $path === '/v1/activate') { activate(); return true; }
   if ($method === 'POST' && $path === '/v1/validate') { validateLic(); return true; }

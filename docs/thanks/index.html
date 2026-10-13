@@ -13,13 +13,14 @@
   <div class="num" aria-hidden="true">18<small>You're in</small></div>
   <div>
   <h1>You're in. Here's the next minute.</h1>
-  <p>Your plan key is in your purchase email. Three steps and your week starts posting:</p>
+  <div class="keybox" id="keybox" aria-live="polite"><p class="keylabel">Your plan key</p><p class="key" id="plankey">Getting your key…</p><p class="keynote" id="keynote">Save it somewhere safe. You will paste it into Spektly, and it opens your billing page later.</p><button class="clay sm" type="button" id="copykey" hidden>Copy key</button></div>
+  <p>Stripe emails your receipt. Three steps and your week starts posting:</p>
   <ol><li><a href="../#download">Download Spektly</a> for Mac or Windows and open it.</li><li>Paste your plan key and click Activate this computer.</li><li>Connect your platforms and line up your first post.</li></ol>
   <h2>Checked out as a guest? Create your account now.</h2>
   <p>It takes ten seconds. Your account keeps your keys together, sends plan updates to the app, and enters you in the monthly customer giveaways.</p>
   <form class="form" method="post" action="https://signin.spektly.com/v1/account/signup">
-    <label>Email you paid with<input type="email" name="email" required autocomplete="email"></label>
-    <label>Plan key <span style="font-weight:400;color:var(--soft)">(optional)</span><input type="text" name="key" spellcheck="false" autocomplete="off"></label>
+    <label>Email you paid with<input type="email" name="email" id="paidemail" required autocomplete="email"></label>
+    <label>Plan key <span style="font-weight:400;color:var(--soft)">(optional)</span><input type="text" name="key" id="keyfield" spellcheck="false" autocomplete="off"></label>
     <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
     <input type="hidden" name="ref" id="ref">
     <label class="check"><input type="checkbox" name="updates" value="1" checked> Email me about my plan, new features and updates.</label>

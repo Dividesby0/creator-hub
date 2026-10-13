@@ -26,8 +26,13 @@
     <button class="clay ink" type="submit">Create my account</button>
     <p style="margin:0;font-size:14px;color:var(--soft)">We use your email only for Spektly. See the <a href="../privacy/#accounts">privacy policy</a>.</p>
   </form>
-  <h2>Billing, receipts and cancelling</h2>
-  <p>Your purchase email has a link to manage your plan: change it, update your card, download receipts or cancel. Lost it? Email <a href="mailto:info@spektly.com">info@spektly.com</a> from the address you paid with.</p>
+  <h2 id="billing">Billing, receipts and cancelling</h2>
+  <p>Change your plan, update your card, download receipts or cancel. Paste your plan key and we will open your billing page, run by Stripe.</p>
+  <form class="form" method="post" action="https://signin.spektly.com/v1/billing/portal">
+    <label>Plan key<input type="text" name="key" required spellcheck="false" autocomplete="off" placeholder="SPK-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"></label>
+    <button class="clay ink" type="submit">Manage billing</button>
+  </form>
+  <p>Lost your key? Email <a href="mailto:info@spektly.com">info@spektly.com</a> from the address you paid with.</p>
   <h2>Moving to a new computer</h2>
   <p>In Spektly, open Settings, then License, and click Deactivate this computer. Then paste your key on the new one.</p>
   </div>

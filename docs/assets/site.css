@@ -233,3 +233,8 @@ img, svg { display: block; }
   .top .wrap { gap: 12px; } .clock { display: none; }
   .top nav { gap: 14px; }
 }
+
+.keybox { background: #10164a; color: #eef2ff; border-radius: 22px; padding: 22px 24px; margin: 18px 0 26px; }
+.keybox p.keylabel, main .keybox p.keylabel { margin: 0 0 6px; font-weight: 700; color: #b9c3f2; font-size: 14px; }
+main .keybox p.key { color: #eef2ff; margin: 0 0 10px; font: 600 clamp(17px, 2.6vw, 24px)/1.3 ui-monospace, Menlo, Consolas, monospace; letter-spacing: .04em; word-break: break-all; }
+main .keybox p.keynote { margin: 0 0 12px; color: #c9d0f5; font-size: 15px; }

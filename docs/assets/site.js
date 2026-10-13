@@ -31,8 +31,30 @@
   if (flash) {
     const msg = q.get('joined') ? ['ok', 'Your account is set up. Thanks for being here.']
       : q.get('error') === 'email' ? ['bad', 'That email address does not look right. Try again.']
+      : q.get('error') === 'key' ? ['bad', 'We could not find a plan with that key. Copy it again, or email info@spektly.com.']
       : q.get('error') ? ['bad', 'Too many tries from this network. Wait a few minutes and try again.'] : null;
     if (msg) { flash.className = 'flash ' + msg[0]; flash.textContent = msg[1]; }
+  }
+  // Thanks page: fetch the plan key for this Checkout Session (the session id is the proof of purchase).
+  const keyEl = document.getElementById('plankey');
+  const sid = q.get('session_id');
+  if (keyEl) {
+    const note = document.getElementById('keynote'), copy = document.getElementById('copykey');
+    if (!sid) { keyEl.textContent = 'Open this page from your checkout to see your key.'; }
+    else {
+      let tries = 0;
+      const load = () => fetch('https://signin.spektly.com/v1/stripe/session?session_id=' + encodeURIComponent(sid), { credentials: 'omit' })
+        .then(r => r.json()).then(d => {
+          if (d.key) {
+            keyEl.textContent = d.key;
+            const kf = document.getElementById('keyfield'); if (kf) kf.value = d.key;
+            const ef = document.getElementById('paidemail'); if (ef && d.email) ef.value = d.email;
+            if (copy) { copy.hidden = false; copy.onclick = () => navigator.clipboard.writeText(d.key).then(() => { copy.textContent = 'Copied'; }); }
+          } else if (d.pending && tries++ < 20) { keyEl.textContent = 'Your payment is still processing…'; setTimeout(load, 4000); }
+          else { keyEl.textContent = 'We could not load your key here.'; note.textContent = 'Email info@spektly.com from the address you paid with and we will send it.'; }
+        }).catch(() => { if (tries++ < 5) setTimeout(load, 3000); else keyEl.textContent = 'We could not load your key here. Email info@spektly.com.'; });
+      load();
+    }
   }
   const ref = q.get('order_id') || q.get('checkout_id') || q.get('customer_id') || '';
   document.querySelectorAll('#ref').forEach(i => { i.value = ref.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 80); });
